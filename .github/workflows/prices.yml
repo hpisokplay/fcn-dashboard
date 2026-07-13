@@ -1,0 +1,29 @@
+name: 更新美股／日股報價
+
+on:
+  schedule:
+    # UTC 07:00 = 台北 15:00（日股收盤後）
+    - cron: "0 7 * * 1-5"
+    # UTC 21:00 = 台北 05:00（美股收盤後，隔天）
+    - cron: "0 21 * * 1-5"
+  workflow_dispatch: {}   # 允許在 Actions 分頁手動按「Run workflow」
+
+permissions:
+  contents: write
+
+jobs:
+  prices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 抓取報價
+        run: python3 scripts/fetch_prices.py
+
+      - name: 提交更新
+        run: |
+          git config user.name "price-bot"
+          git config user.email "actions@github.com"
+          git add prices.json
+          git diff --cached --quiet && echo "無變更" || git commit -m "prices: $(date -u +'%Y-%m-%d %H:%M') UTC 自動更新"
+          git push
