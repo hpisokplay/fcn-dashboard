@@ -7,6 +7,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         [v-cloak] { display: none; }
@@ -122,7 +123,8 @@
                 <div class="fcn-card">
                     <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                         <h3 class="font-black text-slate-800">目前資料（{{ inventory.length }} 筆）</h3>
-                        <div class="flex gap-2 items-center">
+                        <div class="flex gap-2 items-center flex-wrap">
+                            <button @click="exportExcel" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-sm">📊 匯出 Excel</button>
                             <input v-model="githubToken" type="password" placeholder="GitHub Token" class="text-xs bg-gray-100 p-2 rounded-lg w-36 font-mono outline-none">
                             <button @click="saveAllToGithub" :disabled="isUploading" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-sm">{{ isUploading ? '儲存中…' : '💾 儲存到 GitHub' }}</button>
                         </div>
@@ -493,6 +495,50 @@
                         lines.push(cols.map(c => esc(row[c])).join(','));
                     });
                     return lines.join('\n');
+                },
+                riskStatus(i) {
+                    const parts = [];
+                    try {
+                        if (i.kiP > 0) {
+                            const dl = this.parseDate(i.date);
+                            if ((i.stocks || []).some(s => { const lo = this.getLowestSince(s, dl); return lo > 0 && lo <= (s.init * i.kiP / 100); })) parts.push('觸及KI');
+                        }
+                        if (!this.checkIsLocked(i)) {
+                            const st = this.parseDate(i.koStart);
+                            if ((i.stocks || []).some(s => { const hi = this.getHighestSince(s, st); return hi >= (s.init * i.koP / 100); })) parts.push('曾達KO');
+                        }
+                    } catch (e) {}
+                    return parts.length ? parts.join('、') : '正常';
+                },
+                exportExcel() {
+                    if (typeof XLSX === 'undefined') { alert('Excel 元件尚未載入完成，請稍候再試一次'); return; }
+                    if (!this.inventory.length) { alert('目前沒有資料可匯出'); return; }
+                    const perf = s => (s.init && s.current) ? Math.round((s.current / s.init) * 10000) / 100 : '';
+                    const rows = this.inventory.map(it => {
+                        const st = it.stocks || [];
+                        const row = {
+                            '客戶': it.client, 'SN': it.sn, '業務員': it.sales, '幣別': it.currency,
+                            '票息(%)': it.coupon, '庫存金額(萬)': it.amount,
+                            '月利率(%)': (it.coupon != null) ? Math.round((it.coupon / 12) * 10000) / 10000 : '',
+                            '下單日': it.date, '觀察起日': it.koStart, '到期日': it.expiry,
+                            'KO(%)': it.koP, 'KI(%)': it.kiP, 'PUT(%)': it.strikeP,
+                        };
+                        for (let i = 0; i < 4; i++) {
+                            const s = st[i];
+                            row['標的' + (i+1)] = s ? s.code : '';
+                            row['期初' + (i+1)] = s ? s.init : '';
+                            row['現價' + (i+1)] = s ? s.current : '';
+                            row['表現' + (i+1) + '(%)'] = s ? perf(s) : '';
+                        }
+                        row['風險狀態'] = this.riskStatus(it);
+                        return row;
+                    });
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'FCN部位');
+                    const d = new Date();
+                    const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+                    XLSX.writeFile(wb, `FCN部位_${ymd}.xlsx`);
                 },
                 async saveAllToGithub() {
                     if (!this.githubToken) { alert('請先貼上 GitHub Token'); return; }

@@ -1,3 +1,1 @@
 client,sn,sales,currency,coupon,koP,kiP,strikeP,koStart,date,expiry,amount,s1_code,s1_init,s2_code,s2_init,s3_code,s3_init,s4_code,s4_init
-範例客戶A,SN0001,吳坤達,USD,13.5,105,60,100,2026-09-01,2026-08-01,2027-07-30,500,NVDA,180,AMD,240,MU,150,,
-範例客戶B,SN0002,吳坤達,JPY,11.8,105,55,100,2026-09-15,2026-08-15,2027-08-14,300,7974.T,7000,8035.T,70000,,,,
