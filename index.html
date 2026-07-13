@@ -50,7 +50,8 @@
                 <button @click="view = 'client'" :class="['nav-btn', view === 'client' ? 'active' : '']">按客戶</button>
                 <button @click="view = 'sales'" :class="['nav-btn', view === 'sales' ? 'active' : '']">按業務員</button>
                 <button @click="view = 'alerts'" :class="['nav-btn', view === 'alerts' ? 'active' : '']">預警中心</button>
-                <button @click="view = 'admin_login'" :class="['nav-btn', view.includes('admin') ? 'active' : '']"><i class="fa-solid fa-gear text-lg"></i></button>
+                <button @click="view = 'entry'" :class="['nav-btn', view === 'entry' ? 'active' : '']">資料輸入</button>
+                <button @click="view = 'admin_panel'" :class="['nav-btn', view.includes('admin') ? 'active' : '']"><i class="fa-solid fa-gear text-lg"></i></button>
                 <div class="ml-auto flex items-center pr-3">
                     <i @click="fetchRealPrices" class="fa-solid fa-rotate text-blue-500 cursor-pointer text-lg" :class="{'animate-spin': isSyncing}"></i>
                 </div>
@@ -85,6 +86,60 @@
             </div>
             <div v-if="view === 'client'" class="space-y-4 fade-in"><input v-model="search" type="text" placeholder="🔍 Search Client or SN..." class="w-full p-4 rounded-3xl bg-white shadow-sm font-bold outline-none text-slate-800 pl-6"><client-card v-for="item in clientFilteredList" :item="item" :key="item.sn + item.client"></client-card></div>
             <div v-if="view === 'sales'" class="space-y-4 fade-in text-slate-800 text-left"><select v-model="selectedSales" class="w-full p-4 rounded-3xl bg-white shadow-sm font-black text-blue-600 outline-none text-lg text-slate-800 font-mono"><option v-for="s in salesSummary" :value="s.name">{{ s.name }} ({{ s.count }} 筆)</option></select><client-card v-for="item in salesFilteredList" :item="item" :key="item.sn + item.client"></client-card></div>
+
+            <div v-if="view === 'entry'" class="space-y-4 fade-in text-slate-800 text-left">
+                <div class="fcn-card">
+                    <h2 class="text-xl font-black italic mb-4">{{ editIndex===null ? '➕ 新增部位' : '✏️ 編輯部位' }}</h2>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <label class="block font-bold text-gray-500">客戶<input v-model="form.client" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">SN<input v-model="form.sn" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">業務員<input v-model="form.sales" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">幣別<select v-model="form.currency" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"><option>USD</option><option>JPY</option></select></label>
+                        <label class="block font-bold text-gray-500">票息 %<input type="number" step="0.01" v-model.number="form.coupon" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">庫存金額(萬)<input type="number" v-model.number="form.amount" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">KO %<input type="number" step="0.01" v-model.number="form.koP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">KI %<input type="number" step="0.01" v-model.number="form.kiP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">PUT/履約 %<input type="number" step="0.01" v-model.number="form.strikeP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">觀察起日<input type="date" v-model="form.koStart" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">下單日<input type="date" v-model="form.date" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">到期日<input type="date" v-model="form.expiry" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                    </div>
+                    <h3 class="font-black mt-5 mb-2 text-gray-500 text-sm">標的（最多 4 檔・日股代號記得加 .T，例 7974.T）</h3>
+                    <div class="space-y-2">
+                        <div v-for="(st,idx) in form.stocks" :key="idx" class="flex gap-2 items-center">
+                            <input v-model="st.code" placeholder="代號" class="flex-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-blue-600 uppercase">
+                            <input type="number" step="0.01" v-model.number="st.init" placeholder="期初價" class="flex-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800">
+                            <button @click="form.stocks.splice(idx,1)" class="text-red-500 font-black px-2">✕</button>
+                        </div>
+                        <button v-if="form.stocks.length<4" @click="form.stocks.push({code:'',init:null})" class="text-blue-600 font-black text-sm">＋ 加一檔標的</button>
+                    </div>
+                    <div class="flex gap-2 mt-6">
+                        <button @click="submitEntry" class="flex-1 bg-slate-900 text-white p-3.5 rounded-2xl font-black">{{ editIndex===null ? '新增到列表' : '更新' }}</button>
+                        <button v-if="editIndex!==null" @click="resetForm" class="bg-gray-200 text-gray-600 px-6 rounded-2xl font-black">取消</button>
+                    </div>
+                </div>
+
+                <div class="fcn-card">
+                    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                        <h3 class="font-black text-slate-800">目前資料（{{ inventory.length }} 筆）</h3>
+                        <div class="flex gap-2 items-center">
+                            <input v-model="githubToken" type="password" placeholder="GitHub Token" class="text-xs bg-gray-100 p-2 rounded-lg w-36 font-mono outline-none">
+                            <button @click="saveAllToGithub" :disabled="isUploading" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-sm">{{ isUploading ? '儲存中…' : '💾 儲存到 GitHub' }}</button>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div v-for="(it,idx) in inventory" :key="idx" class="flex justify-between items-center bg-gray-50 p-3 rounded-2xl">
+                            <div class="min-w-0"><b class="text-slate-800">{{ it.client }}</b> <span class="text-[11px] text-gray-400 font-bold">{{ it.sn }} · {{ (it.stocks||[]).map(s=>s.code).join('、') }}</span></div>
+                            <div class="flex gap-3 flex-shrink-0">
+                                <button @click="editEntry(idx)" class="text-blue-600 text-sm font-black">編輯</button>
+                                <button @click="deleteEntry(idx)" class="text-red-500 text-sm font-black">刪除</button>
+                            </div>
+                        </div>
+                        <div v-if="inventory.length===0" class="text-center text-gray-300 py-8 font-bold italic text-xs uppercase">No Data</div>
+                    </div>
+                    <p class="text-[11px] text-gray-400 mt-4 leading-relaxed">＊ 新增/編輯/刪除後，要按上面「💾 儲存到 GitHub」才會永久保存。第一次要貼一次 GitHub Token（會記在這台裝置）。</p>
+                </div>
+            </div>
 
             <div v-if="view === 'admin_login'" class="fade-in max-w-sm mx-auto mt-10 text-center"><div class="fcn-card text-slate-800 text-center"><h3 class="font-black mb-4 text-gray-400 uppercase italic text-xs tracking-widest text-slate-800">Admin Security</h3><input v-model="adminPassInput" type="password" @keyup.enter="checkAdminPass" class="w-full p-4 rounded-2xl bg-gray-100 mb-4 text-center font-mono outline-none border-2 focus:border-blue-500 text-slate-800 shadow-sm"><button @click="checkAdminPass" class="w-full bg-slate-800 text-white p-4 rounded-2xl font-black text-white shadow-lg">VERIFY</button></div></div>
             <div v-if="view === 'admin_panel'" class="fade-in space-y-4 text-center text-slate-800 max-w-sm mx-auto"><div class="fcn-card text-slate-800 text-left"><h2 class="text-xl font-black italic mb-6 text-center">CSV DATA SYNC</h2><div class="space-y-6 text-slate-800 font-mono"><input v-model="githubToken" type="password" placeholder="Token" class="w-full bg-gray-50 p-3 rounded-xl border-none font-mono text-center text-sm text-slate-800"><div class="border-4 border-dashed rounded-[2rem] p-10 cursor-pointer hover:bg-gray-50 text-slate-800 text-center"><input type="file" id="csvFile" @change="handleFileUpload" class="hidden text-slate-800"><label for="csvFile" class="block font-black text-gray-500 cursor-pointer">Choose data.csv</label></div><button @click="uploadToGithub" class="w-full bg-blue-600 text-white p-5 rounded-2xl font-black shadow-xl uppercase text-white">Sync GitHub</button></div></div></div>
@@ -240,8 +295,10 @@
             components: { 'client-card': ClientCard },
             data() {
                 return {
-                    view: 'branch', isLoggedIn: false, inputPass: '', password: '98388',
+                    view: 'branch', isLoggedIn: true, inputPass: '', password: '98388',
                     adminPassInput: '', adminPass: '983983',
+                    form: { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:105, kiP:60, strikeP:100, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] },
+                    editIndex: null,
                     githubToken: localStorage.getItem('fcn_token') || '',
                     selectedFile: null, fileName: '', isUploading: false,
                     inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達',
@@ -403,6 +460,59 @@
                 login() { if (this.inputPass === this.password) { this.isLoggedIn = true; sessionStorage.setItem('fcn_auth', 'true'); } },
                 checkAdminPass() { if (this.adminPassInput === this.adminPass) { this.view = 'admin_panel'; } else { alert('ERR'); } },
                 handleFileUpload(e) { const f = e.target.files[0]; if(f){ this.selectedFile=f; this.fileName=f.name; } },
+                resetForm() {
+                    this.form = { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:105, kiP:60, strikeP:100, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] };
+                    this.editIndex = null;
+                },
+                submitEntry() {
+                    const f = this.form;
+                    if (!f.client) { alert('請輸入客戶'); return; }
+                    const stocks = (f.stocks || []).filter(s => s.code).map(s => ({ code: String(s.code).trim().toUpperCase(), init: s.init, current: s.init, history: null }));
+                    const item = { client:f.client, sn:f.sn, sales:f.sales, currency:f.currency, coupon:f.coupon, koP:f.koP, kiP:f.kiP, strikeP:f.strikeP, koStart:f.koStart, date:f.date, expiry:f.expiry, amount:f.amount, stocks };
+                    if (this.editIndex === null) this.inventory.push(item);
+                    else this.inventory.splice(this.editIndex, 1, item);
+                    this.resetForm();
+                    this.fetchRealPrices();  // 帶入最新報價
+                },
+                editEntry(idx) {
+                    const it = this.inventory[idx];
+                    this.form = { client:it.client, sn:it.sn, sales:it.sales, currency:it.currency, coupon:it.coupon, koP:it.koP, kiP:it.kiP, strikeP:it.strikeP, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount, stocks:(it.stocks||[]).map(s => ({ code:s.code, init:s.init })) };
+                    if (!this.form.stocks.length) this.form.stocks = [{code:'',init:null}];
+                    this.editIndex = idx;
+                    window.scrollTo({ top:0, behavior:'smooth' });
+                },
+                deleteEntry(idx) { if (confirm('確定刪除這筆？')) this.inventory.splice(idx, 1); },
+                inventoryToCSV() {
+                    const cols = ['client','sn','sales','currency','coupon','koP','kiP','strikeP','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init'];
+                    const esc = v => { if (v == null) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                    const lines = [cols.join(',')];
+                    this.inventory.forEach(it => {
+                        const st = it.stocks || [];
+                        const row = { client:it.client, sn:it.sn, sales:it.sales, currency:it.currency, coupon:it.coupon, koP:it.koP, kiP:it.kiP, strikeP:it.strikeP, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount };
+                        for (let i = 0; i < 4; i++) { row['s'+(i+1)+'_code'] = st[i] ? st[i].code : ''; row['s'+(i+1)+'_init'] = st[i] ? st[i].init : ''; }
+                        lines.push(cols.map(c => esc(row[c])).join(','));
+                    });
+                    return lines.join('\n');
+                },
+                async saveAllToGithub() {
+                    if (!this.githubToken) { alert('請先貼上 GitHub Token'); return; }
+                    this.isUploading = true;
+                    try {
+                        const owner = 'hpisokplay', repo = 'fcn-dashboard', path = 'data.csv';
+                        localStorage.setItem('fcn_token', this.githubToken);
+                        const csv = this.inventoryToCSV();
+                        const content = btoa(unescape(encodeURIComponent(csv)));
+                        let sha;
+                        const g = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, { headers: { 'Authorization': `token ${this.githubToken}` } });
+                        if (g.ok) { const gd = await g.json(); sha = gd.sha; }
+                        const pr = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                            method: 'PUT', headers: { 'Authorization': `token ${this.githubToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message: 'Update data.csv (web entry)', content, sha })
+                        });
+                        if (pr.ok) { alert('已儲存到 GitHub！約 1 分鐘後生效。'); }
+                        else { const e = await pr.json().catch(() => ({})); alert('儲存失敗：' + (e.message || pr.status)); }
+                    } catch (e) { alert('錯誤：' + e.message); } finally { this.isUploading = false; }
+                },
                 async uploadToGithub() {
                     this.isUploading = true;
                     try {
