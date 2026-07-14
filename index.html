@@ -390,10 +390,9 @@
                     let line = '', area = 'M' + fx(X(tMin)) + ' ' + fx(H - padB) + ' ';
                     pts.forEach((p, k) => { const xx = fx(X(p.t)), yy = fx(Y(p.c)); line += (k ? 'L' : 'M') + xx + ' ' + yy + ' '; area += 'L' + xx + ' ' + yy + ' '; });
                     area += 'L' + fx(X(tMax)) + ' ' + fx(H - padB) + ' Z';
-                    const bl = (v, color, label, dash) => v == null ? '' :
+                    const bl = (v, color, label, pct, dash) => v == null ? '' :
                         '<line x1="' + padL + '" y1="' + fx(Y(v)) + '" x2="' + (W - padR) + '" y2="' + fx(Y(v)) + '" stroke="' + color + '" stroke-width="1.5" ' + (dash ? 'stroke-dasharray="' + dash + '" ' : '') + 'opacity="0.9"/>' +
-                        '<text x="' + (W - padR + 7) + '" y="' + fx(Y(v) + 3.5) + '" fill="' + color + '" font-size="11.5" font-weight="800">' + label + '</text>' +
-                        '<text x="' + (W - padR + 7) + '" y="' + fx(Y(v) + 15) + '" fill="' + color + '" font-size="10" opacity="0.75">' + this.formatPrice(v) + '</text>';
+                        '<text x="' + (W - padR + 7) + '" y="' + fx(Y(v) + 4) + '" fill="' + color + '" font-size="11.5" font-weight="800">' + label + ' ' + (pct != null ? pct + '%' : '') + '</text>';
                     const od = this.parseDate(i.date).getTime() / 1000;
                     let dot = '';
                     if (od >= tMin - 4 * 86400 && od <= tMax) {
@@ -438,7 +437,7 @@
                         '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity="0.26"/><stop offset="1" stop-color="#2563eb" stop-opacity="0.01"/></linearGradient></defs>' +
                         grid +
                         '<path d="' + area + '" fill="url(#' + gid + ')"/>' +
-                        bl(ko, '#b8935a', 'KO') + bl(strike, '#64748b', 'Strike', '5 3') + bl(ki, '#dc2626', 'KI', '5 3') +
+                        bl(ko, '#b8935a', 'KO', i.koP) + bl(strike, '#64748b', 'Strike', i.strikeP, '5 3') + bl(ki, '#dc2626', 'KI', i.kiP, '5 3') +
                         '<path d="' + line + '" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
                         '<circle cx="' + lx + '" cy="' + ly + '" r="3.6" fill="#1d4ed8" stroke="#fff" stroke-width="1.5"/>' +
                         obsLine + hilo + dot + '</svg>';
