@@ -100,7 +100,7 @@
                         <label class="block font-bold text-gray-500">庫存金額(萬)<input type="number" v-model.number="form.amount" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">KO %<input type="number" step="0.01" v-model.number="form.koP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">KI %<input type="number" step="0.01" v-model.number="form.kiP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
-                        <label class="block font-bold text-gray-500">PUT/履約 %<input type="number" step="0.01" v-model.number="form.strikeP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block font-bold text-gray-500">Strike%<input type="number" step="0.01" v-model.number="form.strikeP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">觀察起日<input type="date" v-model="form.koStart" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">下單日<input type="date" v-model="form.date" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">到期日<input type="date" v-model="form.expiry" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
@@ -206,7 +206,7 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap justify-between items-center gap-x-5 gap-y-2 font-black bg-gray-50 p-4 rounded-2xl text-gray-500" style="font-size:17px">
-                        <span>KO <span class="text-slate-900">{{ item.koP }}%</span></span><span>PUT <span class="text-slate-900">{{ item.strikeP }}%</span></span><span :class="{'text-danger underline': hasBreachedKI(item)}">KI {{ item.kiP }}%</span><span>觀察起 <span class="text-slate-900">{{ item.koStart }}</span></span>
+                        <span>KO <span class="text-slate-900">{{ item.koP }}%</span></span><span>Strike <span class="text-slate-900">{{ item.strikeP }}%</span></span><span :class="{'text-danger underline': hasBreachedKI(item)}">KI {{ item.kiP }}%</span><span>觀察起 <span class="text-slate-900">{{ item.koStart }}</span></span>
                     </div>
                 </div>
             `,
