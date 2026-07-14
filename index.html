@@ -276,7 +276,7 @@
                         const startTs = startDate.getTime() / 1000;
                         for (let j = 0; j < stock.history.timestamp.length; j++) {
                             if (stock.history.timestamp[j] >= startTs) {
-                                const low = stock.history.low[j];
+                                const low = (stock.history.close || stock.history.low)[j];
                                 if (low !== null && low < minP) minP = low;
                             }
                         }
@@ -289,7 +289,7 @@
                         const startTs = startDate.getTime() / 1000;
                         for (let j = 0; j < stock.history.timestamp.length; j++) {
                             if (stock.history.timestamp[j] >= startTs) {
-                                const high = stock.history.high[j];
+                                const high = (stock.history.close || stock.history.high)[j];
                                 if (high !== null && high > maxP) maxP = high;
                             }
                         }
@@ -446,7 +446,7 @@
                         const startTs = startDate.getTime() / 1000;
                         for (let j = 0; j < stock.history.timestamp.length; j++) {
                             if (stock.history.timestamp[j] >= startTs) {
-                                const low = stock.history.low[j];
+                                const low = (stock.history.close || stock.history.low)[j];
                                 if (low !== null && low < minP) minP = low;
                             }
                         }
@@ -459,7 +459,7 @@
                         const startTs = startDate.getTime() / 1000;
                         for (let j = 0; j < stock.history.timestamp.length; j++) {
                             if (stock.history.timestamp[j] >= startTs) {
-                                const high = stock.history.high[j];
+                                const high = (stock.history.close || stock.history.high)[j];
                                 if (high !== null && high > maxP) maxP = high;
                             }
                         }
@@ -774,7 +774,7 @@
                                 const p = prices[stock.code];
                                 if (p && p.current != null) {
                                     stock.current = p.current;
-                                    stock.history = { timestamp: p.timestamp, high: p.high, low: p.low };
+                                    stock.history = { timestamp: p.timestamp, high: p.high, low: p.low, close: p.close };
                                 }
                             });
                         });

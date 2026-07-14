@@ -75,6 +75,7 @@ def fetch_chart(sym, retries=3):
                 "timestamp": res.get("timestamp") or [],
                 "high": q.get("high") or [],
                 "low": q.get("low") or [],
+                "close": q.get("close") or [],
             }
         except Exception as e:  # noqa
             print(f"  retry {i+1}/{retries} {sym}: {e}", file=sys.stderr)
