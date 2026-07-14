@@ -215,9 +215,12 @@
                             </div>
                             <div class="text-lg font-bold text-gray-500 mt-3">業代：<span class="text-gray-700 font-black">{{ item.sales || '—' }}</span></div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span :class="[item.currency === 'JPY' ? 'jpy-tag' : 'usd-tag']" style="font-size:16px;padding:4px 14px">{{ item.currency }}</span>
-                            <span class="font-black text-slate-900 leading-none" style="font-size:30px">{{ (!item.amount) ? '交割中' : formatNum(item.amount) + ' 萬' }}</span>
+                        <div class="text-right">
+                            <div class="flex items-center justify-end gap-3">
+                                <span :class="[item.currency === 'JPY' ? 'jpy-tag' : 'usd-tag']" style="font-size:16px;padding:4px 14px">{{ item.currency }}</span>
+                                <span class="font-black text-slate-900 leading-none" style="font-size:30px">{{ (!item.amount) ? '交割中' : formatNum(item.amount) + ' 萬' }}</span>
+                            </div>
+                            <button @click="printCard" title="列印橫式報告" class="mt-2" style="color:#94a3b8;font-size:13px;font-weight:700;background:transparent"><i class="fa-solid fa-print mr-1"></i>列印</button>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-7">
@@ -234,8 +237,14 @@
                                 <p>KI價：<span class="text-slate-900 font-black">{{ item.kiP > 0 ? formatPrice(s.init * (item.kiP/100)) : '無' }}</span></p>
                             </div>
                             <p class="text-3xl font-black mt-2" :class="perfColor(item, s)">{{ getPerf(item, s) }}%</p>
-                            <p v-if="koHitLabel(item, s)" class="font-black text-blue-800 bg-blue-100 rounded-lg px-2 py-1.5 mt-2 leading-snug" style="font-size:15px">達KO：{{ koHitLabel(item, s) }}</p>
-                            <p v-if="kiHitLabel(item, s)" class="font-black text-red-800 bg-red-100 rounded-lg px-2 py-1.5 mt-2 leading-snug" style="font-size:15px">觸KI：{{ kiHitLabel(item, s) }}</p>
+                            <div v-if="koHitLabel(item, s)" class="font-black text-blue-800 bg-blue-100 rounded-lg px-2 py-1.5 mt-2 leading-snug" style="font-size:15px">
+                                <div>達KO {{ koHitInfo(item, s).date }}</div>
+                                <div>收盤價 {{ formatPrice(koHitInfo(item, s).close) }} 元</div>
+                            </div>
+                            <div v-if="kiHitLabel(item, s)" class="font-black text-red-800 bg-red-100 rounded-lg px-2 py-1.5 mt-2 leading-snug" style="font-size:15px">
+                                <div>觸KI {{ kiHitInfo(item, s).date }}</div>
+                                <div>收盤價 {{ formatPrice(kiHitInfo(item, s).close) }} 元</div>
+                            </div>
                         </div>
                     </div>
                     <div class="grid grid-cols-3 gap-3 mb-6">
@@ -255,7 +264,7 @@
                     <div v-if="willTakeDelivery(item)" class="bg-red-600 text-white rounded-2xl px-5 py-4 mb-6 font-black shadow-lg" style="font-size:20px">
                         ⚠ 到期恐接股：{{ deliveryLabel(item) }}
                     </div>
-                    <div class="border-t-2 border-gray-100 pt-6 flex justify-between items-end gap-5 flex-wrap">
+                    <div class="border-t-2 border-gray-100 pt-5 flex justify-between items-start gap-5 flex-wrap">
                         <div class="space-y-2 font-bold text-gray-500" style="font-size:18px">
                             <p>下單日：<span class="text-slate-900 font-black">{{ item.date || '---' }}</span></p>
                             <p>觀察日：<span class="text-slate-900 font-black">{{ item.koStart || '---' }}</span></p>
@@ -267,7 +276,6 @@
                                 <span>月利率 <span class="text-slate-800 font-black">{{ (item.coupon/12).toFixed(2) }}%</span></span>
                             </div>
                             <div class="mt-1 font-bold text-gray-500" style="font-size:18px">預估月息 <span class="text-emerald-600 font-black" style="font-size:30px">{{ item.currency==='JPY'?'¥':'$' }}{{ formatNum(calcMonthly(item)) }}</span></div>
-                            <button @click="printCard" title="列印橫式報告" class="mt-3" style="background:#0f2748;color:#fff;padding:9px 22px;border-radius:9999px;font-size:15px;font-weight:800;white-space:nowrap"><i class="fa-solid fa-print mr-2"></i>列印</button>
                         </div>
                     </div>
                 </div>
