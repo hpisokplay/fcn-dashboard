@@ -117,14 +117,7 @@
                     </select>
                     <button @click="exportSelectedClient" class="bg-emerald-600 text-white font-black rounded-2xl px-6 py-4 text-base whitespace-nowrap shadow-sm"><i class="fa-solid fa-table-list mr-2"></i>匯出客戶總表</button>
                 </div>
-                <input v-model="search" type="text" placeholder="🔍 Search Client or SN..." class="w-full p-4 rounded-3xl bg-white shadow-sm font-bold outline-none text-slate-800 pl-6">
-                <div v-for="grp in clientGroups" :key="grp.name" class="space-y-4">
-                    <div class="flex justify-between items-center gap-3 flex-wrap bg-white rounded-2xl shadow-sm px-5 py-3 border border-gray-100">
-                        <h2 class="text-2xl font-black text-slate-800">{{ grp.name }} <span class="text-base text-gray-400 font-bold ml-1">· {{ grp.items.length }} 檔</span></h2>
-                        <button @click="exportClientReport(grp.name)" class="bg-emerald-600 text-white font-black rounded-xl px-5 py-2.5 text-base whitespace-nowrap shadow-sm"><i class="fa-solid fa-table-list mr-2"></i>匯出客戶總表</button>
-                    </div>
-                    <client-card v-for="item in grp.items" :item="item" :key="item.sn + item.client"></client-card>
-                </div>
+                <client-card v-for="item in clientViewList" :item="item" :key="item.sn + item.client"></client-card>
             </div>
             <div v-if="view === 'sales'" class="space-y-4 fade-in text-slate-800 text-left"><select v-model="selectedSales" class="w-full p-4 rounded-3xl bg-white shadow-sm font-black text-blue-600 outline-none text-lg text-slate-800 font-mono"><option v-for="s in salesSummary" :value="s.name">{{ s.name }} ({{ s.count }} 筆)</option></select><client-card v-for="item in salesFilteredList" :item="item" :key="item.sn + item.client"></client-card></div>
 
@@ -725,6 +718,9 @@
                 },
                 clientNames() {
                     return [...new Set(this.inventory.map(i => i.client || '(未命名)'))].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+                },
+                clientViewList() {
+                    return this.selectedClient ? this.inventory.filter(i => (i.client || '(未命名)') === this.selectedClient) : this.inventory;
                 }
             },
             methods: {
