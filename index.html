@@ -110,6 +110,13 @@
                 </div>
             </div>
             <div v-if="view === 'client'" class="space-y-4 fade-in">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <select v-model="selectedClient" class="flex-1 min-w-[200px] p-4 rounded-3xl bg-white shadow-sm font-black text-blue-600 outline-none text-lg">
+                        <option value="">— 選擇客戶 —</option>
+                        <option v-for="c in clientNames" :key="c" :value="c">{{ c }}</option>
+                    </select>
+                    <button @click="exportSelectedClient" class="bg-emerald-600 text-white font-black rounded-2xl px-6 py-4 text-base whitespace-nowrap shadow-sm"><i class="fa-solid fa-table-list mr-2"></i>匯出客戶總表</button>
+                </div>
                 <input v-model="search" type="text" placeholder="🔍 Search Client or SN..." class="w-full p-4 rounded-3xl bg-white shadow-sm font-bold outline-none text-slate-800 pl-6">
                 <div v-for="grp in clientGroups" :key="grp.name" class="space-y-4">
                     <div class="flex justify-between items-center gap-3 flex-wrap bg-white rounded-2xl shadow-sm px-5 py-3 border border-gray-100">
@@ -565,7 +572,7 @@
                     editExtra: {},
                     githubToken: localStorage.getItem('fcn_token') || '',
                     selectedFile: null, fileName: '', isUploading: false,
-                    inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達',
+                    inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達', selectedClient: '',
                     lastUpdated: '',
                     fx: { usdTwd: 0, jpyTwd: 0, ok: false, at: '' }
                 }
@@ -693,6 +700,9 @@
                     const map = {};
                     this.clientFilteredList.forEach(i => { const k = i.client || '(未命名)'; (map[k] = map[k] || []).push(i); });
                     return Object.keys(map).map(name => ({ name, items: map[name] }));
+                },
+                clientNames() {
+                    return [...new Set(this.inventory.map(i => i.client || '(未命名)'))].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
                 }
             },
             methods: {
@@ -737,6 +747,10 @@
                     if (!this.checkIsLocked(i) && this.getHighestSince(s, this.parseDate(i.koStart)) >= s.init) tags.push('<b style="color:#dc2626">曾達KO</b>');
                     if (i.kiP > 0 && this.getLowestSince(s, this.parseDate(i.koStart || i.date)) <= s.init * i.kiP / 100) tags.push('<b style="color:#dc2626">曾觸KI</b>');
                     return tags.length ? tags.join('・') : '<span style="color:#16a34a">正常</span>';
+                },
+                exportSelectedClient() {
+                    if (!this.selectedClient) { alert('請先從下拉選單選擇客戶'); return; }
+                    this.exportClientReport(this.selectedClient);
                 },
                 exportClientReport(name) {
                     const items = this.inventory.filter(i => (i.client || '(未命名)') === name);
