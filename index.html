@@ -302,7 +302,7 @@
                 },
                 // === 列印：橫式報告（近6個月走勢 + KO/Strike/KI 線 + 下單日紅點）===
                 chartSVG(i, s) {
-                    const W = 720, H = 250, padL = 54, padR = 74, padT = 18, padB = 38;
+                    const W = 720, H = 250, padL = 54, padR = 74, padT = 18, padB = 54;
                     const hist = s.history || {};
                     const tsArr = hist.timestamp || [], clArr = hist.close || hist.high || [];
                     const nowSec = Math.floor(new Date().getTime() / 1000);
@@ -346,7 +346,18 @@
                     }
                     let grid = '';
                     for (let k = 0; k <= 4; k++) { const v = vMin + (vMax - vMin) * k / 4; const yy = fx(Y(v)); grid += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W - padR) + '" y2="' + yy + '" stroke="#eef1f5" stroke-width="1"/><text x="' + (padL - 8) + '" y="' + fx(Y(v) + 3.5) + '" text-anchor="end" fill="#94a3b8" font-size="10.5">' + this.formatPrice(v) + '</text>'; }
-                    for (let k = 0; k <= 6; k++) { const t = tMin + (tMax - tMin) * k / 6; const d = new Date(t * 1000); grid += '<text x="' + fx(X(t)) + '" y="' + (H - padB + 18) + '" text-anchor="middle" fill="#94a3b8" font-size="10">' + d.getFullYear() + '/' + (d.getMonth() + 1) + '</text>'; }
+                    for (let k = 0; k <= 6; k++) { const t = tMin + (tMax - tMin) * k / 6; const d = new Date(t * 1000); grid += '<text x="' + fx(X(t)) + '" y="' + (H - padB + 16) + '" text-anchor="middle" fill="#94a3b8" font-size="10">' + d.getFullYear() + '/' + (d.getMonth() + 1) + '</text>'; }
+                    // 觀察起日垂直線 + 底部日期
+                    let obsLine = '';
+                    const os = i.koStart ? this.parseDate(i.koStart).getTime() / 1000 : null;
+                    if (os != null && !isNaN(os)) {
+                        const oxRaw = X(os);
+                        const ox = oxRaw < padL ? padL : (oxRaw > W - padR ? W - padR : oxRaw);
+                        const oxs = ox.toFixed(1);
+                        obsLine = '<line x1="' + oxs + '" y1="' + padT + '" x2="' + oxs + '" y2="' + (H - padB) + '" stroke="#7c3aed" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.9"/>' +
+                            '<rect x="' + (ox - 44).toFixed(1) + '" y="' + (H - padB + 24) + '" width="88" height="17" rx="4" fill="#7c3aed"/>' +
+                            '<text x="' + oxs + '" y="' + (H - padB + 36) + '" text-anchor="middle" fill="#fff" font-size="10.5" font-weight="800">觀察起 ' + this._fmtDate(os) + '</text>';
+                    }
                     const lx = fx(X(tMax)), ly = fx(Y(pts[pts.length - 1].c));
                     return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">' +
                         '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity="0.26"/><stop offset="1" stop-color="#2563eb" stop-opacity="0.01"/></linearGradient></defs>' +
@@ -355,7 +366,7 @@
                         bl(ko, '#b8935a', 'KO') + bl(strike, '#64748b', 'Strike', '5 3') + bl(ki, '#dc2626', 'KI', '5 3') +
                         '<path d="' + line + '" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
                         '<circle cx="' + lx + '" cy="' + ly + '" r="3.6" fill="#1d4ed8" stroke="#fff" stroke-width="1.5"/>' +
-                        dot + '</svg>';
+                        obsLine + dot + '</svg>';
                 },
                 buildPrintHTML(i) {
                     const st = (i.stocks || []).filter(s => s.code);
@@ -366,9 +377,12 @@
                     const rows = st.map((s, idx) => {
                         const strike = i.strikeP > 0 ? this.formatPrice(s.init * i.strikeP / 100) : '無';
                         const ki = i.kiP > 0 ? this.formatPrice(s.init * i.kiP / 100) : '無';
+                        let badges = '';
+                        if (this.isStockKO(i, s)) badges += '<span class="bdg ko">曾達KO</span>';
+                        if (this.isStockKI(i, s)) badges += '<span class="bdg ki">曾觸KI</span>';
                         return '<div class="srow"><div class="sinfo">' +
                             '<div class="stag">標的 ' + (idx + 1) + '</div>' +
-                            '<div class="scode">' + s.code.replace('.T', '') + '</div>' +
+                            '<div class="scode">' + s.code.replace('.T', '') + badges + '</div>' +
                             '<div class="sname">' + this.getStockName(s.code) + '</div>' +
                             '<table class="sprices">' +
                             '<tr><td>前一日收盤</td><td class="v">' + this.formatPrice(s.current) + '</td></tr>' +
@@ -393,7 +407,9 @@
                         '.srow{display:flex;gap:14px;align-items:stretch;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-top:12px;page-break-inside:avoid}' +
                         '.sinfo{width:206px;flex:0 0 206px;border-right:1px solid #eef1f5;padding-right:12px}' +
                         '.stag{display:inline-block;background:#b8935a;color:#fff;font-size:11px;font-weight:800;padding:2px 10px;border-radius:6px;letter-spacing:1px}' +
-                        '.scode{font-size:26px;font-weight:900;color:#1d4ed8;margin-top:7px;line-height:1}' +
+                        '.scode{font-size:26px;font-weight:900;color:#1d4ed8;margin-top:7px;line-height:1.15}' +
+                        '.bdg{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;vertical-align:middle;margin-left:5px}' +
+                        '.bdg.ko{background:#b8935a;color:#fff}.bdg.ki{background:#dc2626;color:#fff}' +
                         '.sname{font-size:13px;color:#64748b;font-weight:700;margin-bottom:8px}' +
                         '.sprices{width:100%;border-collapse:collapse;font-size:13px}' +
                         '.sprices td{padding:6px 4px;border-bottom:1px solid #f1f5f9;font-weight:700;color:#475569}' +
@@ -404,9 +420,9 @@
                         '</style></head><body>' +
                         '<div class="hd"><div class="t">FCN 部位報告<small>FIXED COUPON NOTE · POSITION REVIEW</small></div>' +
                         '<div class="meta"><b style="font-size:18px">' + (i.client || '') + '</b>　' + (i.sn || '') + '<br>業務：<b>' + (i.sales || '-') + '</b>　交割幣別：<b>' + (i.currency || '-') + '</b><br>報價日期：<b>' + dstr + '</b></div></div>' +
-                        '<table class="cond"><thead><tr><th>下單日</th><th>天期(月)</th><th>觀察起日</th><th>出場價 KO</th><th>履約價 Strike</th><th>下限價 KI</th><th>Coupon(年化)</th></tr></thead><tbody>' +
-                        '<tr><td>' + (i.date || '-') + '</td><td>' + months + '</td><td>' + (i.koStart || '-') + '</td><td class="hl">' + (i.koP || '-') + '%</td><td class="hl">' + (i.strikeP || '-') + '%</td><td class="hl">' + (i.kiP > 0 ? i.kiP + '%' : '無') + '</td><td class="hl">' + (i.coupon || '-') + '%</td></tr></tbody></table>' +
-                        '<div class="legend"><span><i style="border-color:#1d4ed8;border-top-style:solid"></i>收盤價</span><span><i style="border-color:#b8935a;border-top-style:solid"></i>KO</span><span><i style="border-color:#64748b;border-top-style:dashed"></i>Strike</span><span><i style="border-color:#dc2626;border-top-style:dashed"></i>KI</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e11d48;vertical-align:middle;margin-right:4px"></span>下單日</span></div>' +
+                        '<table class="cond"><thead><tr><th>下單日</th><th>天期(月)</th><th>到期日</th><th>出場價 KO</th><th>履約價 Strike</th><th>下限價 KI</th><th>Coupon(年化)</th></tr></thead><tbody>' +
+                        '<tr><td>' + (i.date || '-') + '</td><td>' + months + '</td><td>' + (i.expiry || '-') + '</td><td class="hl">' + (i.koP || '-') + '%</td><td class="hl">' + (i.strikeP || '-') + '%</td><td class="hl">' + (i.kiP > 0 ? i.kiP + '%' : '無') + '</td><td class="hl">' + (i.coupon || '-') + '%</td></tr></tbody></table>' +
+                        '<div class="legend"><span><i style="border-color:#1d4ed8;border-top-style:solid"></i>收盤價</span><span><i style="border-color:#b8935a;border-top-style:solid"></i>KO</span><span><i style="border-color:#64748b;border-top-style:dashed"></i>Strike</span><span><i style="border-color:#dc2626;border-top-style:dashed"></i>KI</span><span><i style="border-color:#7c3aed;border-top-style:dashed"></i>觀察起日</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e11d48;vertical-align:middle;margin-right:4px"></span>下單日</span></div>' +
                         rows +
                         '<div class="ft">◎ 本報告僅供內部參考，一切以實際成交狀況為主 ◎ 走勢為標的近 6 個月每日收盤價 ◎ KO／Strike／KI 為換算後之價格水準</div>' +
                         '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},450)}<\/scr' + 'ipt></body></html>';
