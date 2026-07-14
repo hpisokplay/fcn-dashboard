@@ -109,7 +109,16 @@
                     <div class="text-5xl font-black italic font-mono tracking-tighter text-white">¥ {{ formatNum(totalJPY) }} <span class="text-lg font-normal opacity-50 uppercase">萬</span></div>
                 </div>
             </div>
-            <div v-if="view === 'client'" class="space-y-4 fade-in"><input v-model="search" type="text" placeholder="🔍 Search Client or SN..." class="w-full p-4 rounded-3xl bg-white shadow-sm font-bold outline-none text-slate-800 pl-6"><client-card v-for="item in clientFilteredList" :item="item" :key="item.sn + item.client"></client-card></div>
+            <div v-if="view === 'client'" class="space-y-4 fade-in">
+                <input v-model="search" type="text" placeholder="🔍 Search Client or SN..." class="w-full p-4 rounded-3xl bg-white shadow-sm font-bold outline-none text-slate-800 pl-6">
+                <div v-for="grp in clientGroups" :key="grp.name" class="space-y-4">
+                    <div class="flex justify-between items-center gap-3 flex-wrap bg-white rounded-2xl shadow-sm px-5 py-3 border border-gray-100">
+                        <h2 class="text-2xl font-black text-slate-800">{{ grp.name }} <span class="text-base text-gray-400 font-bold ml-1">· {{ grp.items.length }} 檔</span></h2>
+                        <button @click="exportClientReport(grp.name)" class="bg-emerald-600 text-white font-black rounded-xl px-5 py-2.5 text-base whitespace-nowrap shadow-sm"><i class="fa-solid fa-table-list mr-2"></i>匯出客戶總表</button>
+                    </div>
+                    <client-card v-for="item in grp.items" :item="item" :key="item.sn + item.client"></client-card>
+                </div>
+            </div>
             <div v-if="view === 'sales'" class="space-y-4 fade-in text-slate-800 text-left"><select v-model="selectedSales" class="w-full p-4 rounded-3xl bg-white shadow-sm font-black text-blue-600 outline-none text-lg text-slate-800 font-mono"><option v-for="s in salesSummary" :value="s.name">{{ s.name }} ({{ s.count }} 筆)</option></select><client-card v-for="item in salesFilteredList" :item="item" :key="item.sn + item.client"></client-card></div>
 
             <div v-if="view === 'entry'" class="space-y-4 fade-in text-slate-800 text-left">
@@ -679,7 +688,12 @@
                     const s = (this.search || "").toLowerCase().trim();
                     return !s ? this.inventory : this.inventory.filter(i => (i.client && i.client.includes(s)) || (i.sn && i.sn.toLowerCase().includes(s)));
                 },
-                salesFilteredList() { return this.inventory.filter(i => i.sales === this.selectedSales); }
+                salesFilteredList() { return this.inventory.filter(i => i.sales === this.selectedSales); },
+                clientGroups() {
+                    const map = {};
+                    this.clientFilteredList.forEach(i => { const k = i.client || '(未命名)'; (map[k] = map[k] || []).push(i); });
+                    return Object.keys(map).map(name => ({ name, items: map[name] }));
+                }
             },
             methods: {
                 parseDate(str) {
@@ -718,7 +732,81 @@
                     }
                     return maxP;
                 },
+                _stkStatus(i, s) {
+                    const tags = [];
+                    if (!this.checkIsLocked(i) && this.getHighestSince(s, this.parseDate(i.koStart)) >= s.init) tags.push('<b style="color:#dc2626">曾達KO</b>');
+                    if (i.kiP > 0 && this.getLowestSince(s, this.parseDate(i.koStart || i.date)) <= s.init * i.kiP / 100) tags.push('<b style="color:#dc2626">曾觸KI</b>');
+                    return tags.length ? tags.join('・') : '<span style="color:#16a34a">正常</span>';
+                },
+                exportClientReport(name) {
+                    const items = this.inventory.filter(i => (i.client || '(未命名)') === name);
+                    if (!items.length) { alert('查無此客戶的部位'); return; }
+                    const now = new Date();
+                    const dstr = now.getFullYear() + '/' + (now.getMonth() + 1) + '/' + now.getDate();
+                    const salesRow = items.find(i => i.sales);
+                    const sales = salesRow ? salesRow.sales : '-';
+                    const sumUSD = items.filter(i => i.currency === 'USD').reduce((a, i) => a + (i.amount || 0), 0);
+                    const sumJPY = items.filter(i => i.currency === 'JPY').reduce((a, i) => a + (i.amount || 0), 0);
+                    const tot = [];
+                    if (sumUSD) tot.push('美金 $ ' + this.formatNum(sumUSD) + ' 萬');
+                    if (sumJPY) tot.push('日幣 ¥ ' + this.formatNum(sumJPY) + ' 萬');
+                    let body = '';
+                    items.forEach((i, idx) => {
+                        const st = (i.stocks || []).filter(s => s.code);
+                        const n = Math.max(1, st.length);
+                        const alt = idx % 2 ? ' alt' : '';
+                        const grp =
+                            '<td rowspan="' + n + '" class="c b">' + (i.sn || '-') + '</td>' +
+                            '<td rowspan="' + n + '" class="c">' + (i.currency || '-') + '</td>' +
+                            '<td rowspan="' + n + '" class="c">' + (i.coupon != null ? i.coupon + '%' : '-') + '</td>' +
+                            '<td rowspan="' + n + '" class="c b">' + (i.amount != null ? this.formatNum(i.amount) : '-') + '</td>' +
+                            '<td rowspan="' + n + '" class="c">' + (i.date || '-') + '</td>' +
+                            '<td rowspan="' + n + '" class="c">' + (i.koStart || '-') + '</td>' +
+                            '<td rowspan="' + n + '" class="c">' + (i.expiry || '-') + '</td>';
+                        if (!st.length) {
+                            body += '<tr class="grp' + alt + '">' + grp + '<td class="l" colspan="7" style="color:#94a3b8">（尚未輸入標的）</td></tr>';
+                            return;
+                        }
+                        st.forEach((s, k) => {
+                            const strike = i.strikeP > 0 ? this.formatPrice(s.init * i.strikeP / 100) : '無';
+                            const ki = i.kiP > 0 ? this.formatPrice(s.init * i.kiP / 100) : '無';
+                            const perf = (s.init && s.current) ? (s.current / s.init * 100).toFixed(2) + '%' : '-';
+                            const cells =
+                                '<td class="l"><b style="color:#1d4ed8">' + s.code.replace('.T', '') + '</b> <span style="color:#94a3b8;font-size:11px">' + this.getStockName(s.code) + '</span></td>' +
+                                '<td class="c" style="font-weight:900">' + this.formatPrice(s.current) + '</td>' +
+                                '<td class="c" style="color:#b8935a;font-weight:800">' + this.formatPrice(s.init) + '</td>' +
+                                '<td class="c">' + strike + '</td>' +
+                                '<td class="c" style="color:#dc2626">' + ki + '</td>' +
+                                '<td class="c">' + perf + '</td>' +
+                                '<td class="c">' + this._stkStatus(i, s) + '</td>';
+                            body += '<tr class="' + (k === n - 1 ? 'grp' : '') + alt + '">' + (k === 0 ? grp : '') + cells + '</tr>';
+                        });
+                    });
+                    const html = '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>客戶庫存總表 - ' + name + '</title><style>' +
+                        '@page{size:A4 landscape;margin:9mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+                        'body{font-family:system-ui,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;color:#13294b;margin:0;padding:6px 12px}' +
+                        '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0f2748;padding-bottom:10px;margin-bottom:12px}' +
+                        '.hd .t{font-size:28px;font-weight:900;letter-spacing:2px;color:#0f2748}.hd .t small{display:block;font-size:11px;font-weight:700;letter-spacing:4px;color:#b8935a;margin-top:3px}' +
+                        '.hd .meta{text-align:right;font-size:13px;color:#475569;line-height:1.7}.hd .meta b{color:#0f2748}' +
+                        'table.big{width:100%;border-collapse:collapse;font-size:12px}' +
+                        'table.big th{background:#0f2748;color:#fff;font-weight:800;padding:8px 5px;border:1px solid #0f2748;white-space:nowrap}' +
+                        'table.big td{border:1px solid #dbe1ea;padding:7px 6px;vertical-align:middle}' +
+                        'td.c{text-align:center}td.l{text-align:left}td.b{font-weight:900}' +
+                        'tr.alt td{background:#f7f9fc}tr.grp td{border-bottom:2px solid #cbd5e1}' +
+                        '.ft{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:8px;font-size:10.5px;color:#94a3b8;text-align:center;letter-spacing:.4px}' +
+                        '</style></head><body>' +
+                        '<div class="hd"><div class="t">客戶庫存總表<small>FCN HOLDINGS · CLIENT SUMMARY</small></div>' +
+                        '<div class="meta"><b style="font-size:20px">' + name + '</b>　業務：<b>' + sales + '</b>　部位：<b>' + items.length + ' 檔</b><br>' + (tot.join('　') || '—') + '　報價日期：<b>' + dstr + '</b></div></div>' +
+                        '<table class="big"><thead><tr><th>SN</th><th>幣別</th><th>票息</th><th>金額(萬)</th><th>下單日</th><th>觀察起日</th><th>到期日</th><th>連結標的</th><th>現價</th><th>KO價</th><th>Strike價</th><th>KI價</th><th>表現</th><th>狀態</th></tr></thead><tbody>' + body + '</tbody></table>' +
+                        '<div class="ft">◎ 本報告僅供內部參考，一切以實際成交狀況為主 ◎ 現價為最近一次更新之收盤價 ◎ KO／Strike／KI 為換算後之價格水準　◎ 狀態依每日收盤價自動判定</div>' +
+                        '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},400)}<\/scr' + 'ipt></body></html>';
+                    const w = window.open('', '_blank');
+                    if (!w) { alert('請允許彈出視窗，才能開啟客戶總表'); return; }
+                    w.document.open(); w.document.write(html); w.document.close();
+                },
                 formatNum(n) { return n ? Math.floor(n).toLocaleString() : '0'; },
+                formatPrice(n) { if (!n || n == 0) return '---'; return (Math.floor(parseFloat(n) * 100) / 100).toFixed(2); },
+                getStockName(c) { return stockNames[c] || c; },
                 login() { if (this.inputPass === this.password) { this.isLoggedIn = true; sessionStorage.setItem('fcn_auth', 'true'); } },
                 checkAdminPass() { if (this.adminPassInput === this.adminPass) { this.view = 'admin_panel'; } else { alert('ERR'); } },
                 handleFileUpload(e) { const f = e.target.files[0]; if(f){ this.selectedFile=f; this.fileName=f.name; } },
