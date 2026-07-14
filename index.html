@@ -215,10 +215,9 @@
                             </div>
                             <div class="text-lg font-bold text-gray-500 mt-3">業代：<span class="text-gray-700 font-black">{{ item.sales || '—' }}</span></div>
                         </div>
-                        <div class="text-right leading-tight">
+                        <div class="flex items-center gap-3">
                             <span :class="[item.currency === 'JPY' ? 'jpy-tag' : 'usd-tag']" style="font-size:16px;padding:4px 14px">{{ item.currency }}</span>
-                            <div class="mt-2 font-black text-slate-900 leading-none" style="font-size:30px">{{ (!item.amount) ? '交割中' : formatNum(item.amount) }}<span v-if="item.amount" class="text-lg font-bold text-gray-400"> 萬</span></div>
-                            <div class="text-sm text-gray-400 font-bold mt-1">庫存金額</div>
+                            <span class="font-black text-slate-900 leading-none" style="font-size:30px">{{ (!item.amount) ? '交割中' : formatNum(item.amount) + ' 萬' }}</span>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-7">
