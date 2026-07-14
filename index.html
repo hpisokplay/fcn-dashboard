@@ -81,9 +81,32 @@
 
             <div v-if="view === 'branch'" class="space-y-4 fade-in">
                 <h2 class="text-xl font-black px-2 italic uppercase text-slate-800 text-left tracking-tighter">Portfolio Summary</h2>
-                <div v-for="curr in ['JPY', 'USD']" :key="curr" class="fcn-card shadow-xl text-white border-none" :class="curr==='JPY'?'bg-slate-800':'bg-blue-600'">
-                    <div class="flex justify-between items-start mb-4 opacity-80 text-xs font-bold uppercase text-white font-black"><span>Portfolio size</span><span>{{ curr==='JPY'?countJPY:countUSD }}筆</span></div>
-                    <div class="text-5xl font-black italic font-mono tracking-tighter text-white">{{ curr==='JPY'?'¥':'$' }} {{ formatNum(curr==='JPY'?totalJPY:totalUSD) }} <span class="text-lg font-normal opacity-50 uppercase text-white">萬</span></div>
+
+                <div class="fcn-card shadow-xl text-white border-none bg-gradient-to-br from-emerald-600 to-teal-700">
+                    <div class="flex justify-between items-start mb-3 text-white">
+                        <div>
+                            <div class="text-lg font-black tracking-wide">總部位 · 台幣計價</div>
+                            <div class="text-xs font-bold opacity-75 mt-1">美金＋日幣　即時匯率 {{ fxRateLabel }}<span v-if="!fx.ok" class="ml-1">（估算）</span></div>
+                        </div>
+                        <span class="text-sm font-black opacity-80 mt-1 whitespace-nowrap">{{ countUSD + countJPY }}筆</span>
+                    </div>
+                    <div class="text-5xl font-black italic font-mono tracking-tighter text-white">NT$ {{ formatNum(totalTWD) }} <span class="text-lg font-normal opacity-60 uppercase">萬</span></div>
+                </div>
+
+                <div class="fcn-card shadow-xl text-white border-none bg-blue-600">
+                    <div class="flex justify-between items-start mb-3 text-white">
+                        <div class="text-lg font-black tracking-wide">美金部位 · 美金計價</div>
+                        <span class="text-sm font-black opacity-80 whitespace-nowrap">{{ countUSD }}筆</span>
+                    </div>
+                    <div class="text-5xl font-black italic font-mono tracking-tighter text-white">$ {{ formatNum(totalUSD) }} <span class="text-lg font-normal opacity-50 uppercase">萬</span></div>
+                </div>
+
+                <div class="fcn-card shadow-xl text-white border-none bg-slate-800">
+                    <div class="flex justify-between items-start mb-3 text-white">
+                        <div class="text-lg font-black tracking-wide">日幣部位 · 日幣計價</div>
+                        <span class="text-sm font-black opacity-80 whitespace-nowrap">{{ countJPY }}筆</span>
+                    </div>
+                    <div class="text-5xl font-black italic font-mono tracking-tighter text-white">¥ {{ formatNum(totalJPY) }} <span class="text-lg font-normal opacity-50 uppercase">萬</span></div>
                 </div>
             </div>
             <div v-if="view === 'client'" class="space-y-4 fade-in"><input v-model="search" type="text" placeholder="🔍 Search Client or SN..." class="w-full p-4 rounded-3xl bg-white shadow-sm font-bold outline-none text-slate-800 pl-6"><client-card v-for="item in clientFilteredList" :item="item" :key="item.sn + item.client"></client-card></div>
@@ -534,7 +557,8 @@
                     githubToken: localStorage.getItem('fcn_token') || '',
                     selectedFile: null, fileName: '', isUploading: false,
                     inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達',
-                    lastUpdated: ''
+                    lastUpdated: '',
+                    fx: { usdTwd: 0, jpyTwd: 0, ok: false, at: '' }
                 }
             },
             computed: {
@@ -542,6 +566,8 @@
                 countUSD() { return this.inventory.filter(i => i.currency === 'USD').length; },
                 totalJPY() { return this.inventory.filter(i => i.currency === 'JPY').reduce((s, i) => s + (i.amount||0), 0); },
                 totalUSD() { return this.inventory.filter(i => i.currency === 'USD').reduce((s, i) => s + (i.amount||0), 0); },
+                totalTWD() { return this.fx.ok ? (this.totalUSD * this.fx.usdTwd + this.totalJPY * this.fx.jpyTwd) : 0; },
+                fxRateLabel() { return this.fx.ok ? ('USD ' + this.fx.usdTwd.toFixed(2) + '　JPY ' + this.fx.jpyTwd.toFixed(3)) : '匯率載入中…'; },
                 salesSummary() {
                     const map = {}; this.inventory.forEach(i => { if(i.sales) map[i.sales] = (map[i.sales] || 0) + 1; });
                     return Object.keys(map).map(k => ({ name: k, count: map[k] })).sort((a,b) => b.count - a.count);
@@ -1059,6 +1085,20 @@
                         });
                     } catch (e) { console.error("CSV ERR"); } finally { this.isSyncing = false; }
                 },
+                async fetchFX() {
+                    // 即時匯率（免金鑰、支援 CORS）：USD 基準取 TWD/JPY，再算 JPY→TWD
+                    try {
+                        const r = await fetch('https://open.er-api.com/v6/latest/USD');
+                        const j = await r.json();
+                        const twd = j && j.rates && j.rates.TWD, jpy = j && j.rates && j.rates.JPY;
+                        if (twd && jpy) {
+                            this.fx = { usdTwd: twd, jpyTwd: twd / jpy, ok: true, at: new Date().toLocaleTimeString('zh-TW') };
+                            return;
+                        }
+                    } catch (e) { /* 落到備援 */ }
+                    // 備援：抓不到就用近似匯率（僅供估算，畫面會標示）
+                    if (!this.fx.ok) this.fx = { usdTwd: 30, jpyTwd: 0.20, ok: false, at: '' };
+                },
                 async fetchRealPrices() {
                     if (this.inventory.length === 0) return;
                     this.isSyncing = true;
@@ -1108,7 +1148,9 @@
             mounted() {
                 if (sessionStorage.getItem('fcn_auth') === 'true') this.isLoggedIn = true;
                 this.loadCSVData();
+                this.fetchFX();
                 setInterval(() => this.fetchRealPrices(), 60000);
+                setInterval(() => this.fetchFX(), 300000);
                 window.addEventListener('beforeunload', (e) => {
                     if (this.dirty) { e.preventDefault(); e.returnValue = '你有尚未儲存的資料，確定要離開或重新整理嗎？'; }
                 });
