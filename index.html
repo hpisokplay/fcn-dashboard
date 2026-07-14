@@ -70,6 +70,7 @@
                     <button @click="alertTab = 'pko'" :class="['risk-tab', alertTab === 'pko' ? 'active' : '']">曾經KO({{partKOList.length}})</button>
                     <button @click="alertTab = 'nko'" :class="['risk-tab', alertTab === 'nko' ? 'active' : '']">即將KO({{nearKOList.length}})</button>
                     <button @click="alertTab = 'exp'" :class="['risk-tab', alertTab === 'exp' ? 'active' : '']">到期({{expiringList.length}})</button>
+                    <button @click="alertTab = 'dlv'" :class="['risk-tab', alertTab === 'dlv' ? 'active' : '']">到期接股({{deliveryList.length}})</button>
                     <button @click="alertTab = 'exit'" :class="['risk-tab', alertTab === 'exit' ? 'active' : '']">已出場({{exitList.length}})</button>
                 </div>
                 <div class="space-y-4">
@@ -187,12 +188,16 @@
                             <p class="font-black leading-none my-2 text-slate-900" style="font-size:40px">{{ formatPrice(s.current) }}</p>
                             <div class="font-bold text-gray-500 border-t-2 border-gray-200 pt-2 mt-1 space-y-1" style="font-size:17px">
                                 <p>KO價：<span class="text-slate-900 font-black">{{ formatPrice(s.init) }}</span></p>
+                                <p>Strike價：<span class="text-slate-900 font-black">{{ item.strikeP > 0 ? formatPrice(s.init * (item.strikeP/100)) : '無' }}</span></p>
                                 <p>KI價：<span class="text-slate-900 font-black">{{ item.kiP > 0 ? formatPrice(s.init * (item.kiP/100)) : '無' }}</span></p>
                             </div>
                             <p class="text-3xl font-black mt-2" :class="perfColor(item, s)">{{ getPerf(item, s) }}%</p>
                             <p v-if="koHitLabel(item, s)" class="font-black text-blue-800 bg-blue-100 rounded-lg px-2 py-1.5 mt-2 leading-snug" style="font-size:15px">達KO：{{ koHitLabel(item, s) }}</p>
                             <p v-if="kiHitLabel(item, s)" class="font-black text-red-800 bg-red-100 rounded-lg px-2 py-1.5 mt-2 leading-snug" style="font-size:15px">觸KI：{{ kiHitLabel(item, s) }}</p>
                         </div>
+                    </div>
+                    <div v-if="willTakeDelivery(item)" class="bg-red-600 text-white rounded-2xl px-5 py-4 mb-6 font-black shadow-lg" style="font-size:20px">
+                        ⚠ 到期恐接股：{{ deliveryLabel(item) }}
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 border-t-2 border-gray-200 pt-6 mb-5 font-bold text-gray-600" style="font-size:19px">
                         <div class="space-y-2">
@@ -238,7 +243,7 @@
                     if (!(i.kiP > 0)) return null;
                     const ki = s.init * i.kiP / 100;  // KI價
                     if (s.history && s.history.timestamp) {
-                        const start = this.parseDate(i.date).getTime() / 1000;
+                        const start = this.parseDate(i.koStart || i.date).getTime() / 1000;
                         const arr = s.history.close || s.history.low;
                         for (let j = 0; j < s.history.timestamp.length; j++) {
                             if (s.history.timestamp[j] >= start && arr[j] != null && arr[j] <= ki) {
@@ -263,11 +268,34 @@
                 },
                 hasBreachedKI(i) {
                     if (!i.stocks || i.kiP <= 0) return false;
-                    const dateLimit = this.parseDate(i.date);
+                    const dateLimit = this.parseDate(i.koStart || i.date);
                     return i.stocks.some(s => {
                         const lowest = this.getLowestSince(s, dateLimit);
                         return lowest > 0 && lowest <= (s.init * i.kiP / 100);
                     });
+                },
+                // 到期接股：整檔沒有 KO 出場，但曾觸及 KI → 到期用 Strike 接最差的標的
+                isKOExited(i) {
+                    if (this.checkIsLocked(i)) return false;
+                    const st = i.stocks || [];
+                    if (!st.length) return false;
+                    const start = this.parseDate(i.koStart);
+                    return st.every(s => this.getHighestSince(s, start) >= s.init);
+                },
+                willTakeDelivery(i) {
+                    return i.kiP > 0 && this.hasBreachedKI(i) && !this.isKOExited(i);
+                },
+                deliveryInfo(i) {
+                    const st = (i.stocks || []).filter(s => s.init && s.current);
+                    if (!st.length) return null;
+                    let worst = st[0];
+                    st.forEach(s => { if ((s.current / s.init) < (worst.current / worst.init)) worst = s; });
+                    return { code: worst.code.replace('.T', ''), perf: ((worst.current / worst.init) * 100).toFixed(2), strike: worst.init * (i.strikeP / 100) };
+                },
+                deliveryLabel(i) {
+                    const d = this.deliveryInfo(i);
+                    if (!d) return '';
+                    return `${d.code}（最差 ${d.perf}%）· Strike 接股價 ${this.formatPrice(d.strike)}`;
                 },
                 // 判斷股票標記樣式
                 getStockClass(i, s) {
@@ -278,7 +306,7 @@
                 // 邏輯: 曾經跌破 KI (歷史最低 <= KI價)
                 isStockKI(i, s) {
                     if (i.kiP <= 0) return false;
-                    const dateLimit = this.parseDate(i.date);
+                    const dateLimit = this.parseDate(i.koStart || i.date);
                     const lowest = this.getLowestSince(s, dateLimit);
                     return lowest > 0 && lowest <= (s.init * i.kiP / 100);
                 },
@@ -366,7 +394,7 @@
                     // 觸及Ki: 下單日後到今天標的最低股價曾經有低於ki價格。
                     return this.inventory.filter(i => {
                         if (!i.stocks || i.kiP <= 0) return false;
-                        const dateLimit = this.parseDate(i.date);
+                        const dateLimit = this.parseDate(i.koStart || i.date);
                         return i.stocks.some(s => {
                             const lowest = this.getLowestSince(s, dateLimit);
                             return lowest > 0 && lowest <= (s.init * i.kiP / 100);
@@ -455,8 +483,12 @@
                         });
                     });
                 },
+                deliveryList() {
+                    // 到期接股：曾觸及 KI 且尚未 KO 出場
+                    return this.inventory.filter(i => this.kiList.includes(i) && !this.exitList.includes(i));
+                },
                 currentAlertList() {
-                    const m = {ki:this.kiList, obs:this.observationList, pko:this.partKOList, nko:this.nearKOList, exp:this.expiringList, exit:this.exitList};
+                    const m = {ki:this.kiList, obs:this.observationList, pko:this.partKOList, nko:this.nearKOList, exp:this.expiringList, dlv:this.deliveryList, exit:this.exitList};
                     return m[this.alertTab] || [];
                 },
                 clientFilteredList() {
@@ -732,7 +764,7 @@
                     const parts = [];
                     try {
                         if (i.kiP > 0) {
-                            const dl = this.parseDate(i.date);
+                            const dl = this.parseDate(i.koStart || i.date);
                             if ((i.stocks || []).some(s => { const lo = this.getLowestSince(s, dl); return lo > 0 && lo <= (s.init * i.kiP / 100); })) parts.push('觸及KI');
                         }
                         if (!this.checkIsLocked(i)) {
