@@ -301,6 +301,12 @@
                     return `${d.code}（最差 ${d.perf}%）· Strike 接股價 ${this.formatPrice(d.strike)}`;
                 },
                 // === 列印：橫式報告（近6個月走勢 + KO/Strike/KI 線 + 下單日紅點）===
+                closeNear(s, tsSec) {
+                    const h = s.history || {}; const arr = h.close || h.high || []; const t = h.timestamp || [];
+                    let best = null, bd = Infinity;
+                    for (let j = 0; j < t.length; j++) { const c = arr[j]; if (c == null) continue; const d = Math.abs(t[j] - tsSec); if (d < bd) { bd = d; best = c; } }
+                    return best;
+                },
                 chartSVG(i, s) {
                     const W = 720, H = 250, padL = 54, padR = 74, padT = 18, padB = 54;
                     const hist = s.history || {};
@@ -354,10 +360,25 @@
                         const oxRaw = X(os);
                         const ox = oxRaw < padL ? padL : (oxRaw > W - padR ? W - padR : oxRaw);
                         const oxs = ox.toFixed(1);
+                        const od2 = new Date(os * 1000);
+                        const odStr = od2.getFullYear() + '/' + (od2.getMonth() + 1) + '/' + od2.getDate();
+                        const bw = 132, bh = 18;
+                        let bc = ox;
+                        if (bc - bw / 2 < 2) bc = bw / 2 + 2;
+                        if (bc + bw / 2 > W - 2) bc = W - 2 - bw / 2;
                         obsLine = '<line x1="' + oxs + '" y1="' + padT + '" x2="' + oxs + '" y2="' + (H - padB) + '" stroke="#7c3aed" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.9"/>' +
-                            '<rect x="' + (ox - 44).toFixed(1) + '" y="' + (H - padB + 24) + '" width="88" height="17" rx="4" fill="#7c3aed"/>' +
-                            '<text x="' + oxs + '" y="' + (H - padB + 36) + '" text-anchor="middle" fill="#fff" font-size="10.5" font-weight="800">觀察起 ' + this._fmtDate(os) + '</text>';
+                            '<rect x="' + (bc - bw / 2).toFixed(1) + '" y="' + (H - padB + 22) + '" width="' + bw + '" height="' + bh + '" rx="5" fill="#7c3aed"/>' +
+                            '<text x="' + bc.toFixed(1) + '" y="' + (H - padB + 35) + '" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">觀察起日 ' + odStr + '</text>';
                     }
+                    // 最高/最低點小字標示
+                    let hi = pts[0], lo = pts[0];
+                    pts.forEach(p => { if (p.c > hi.c) hi = p; if (p.c < lo.c) lo = p; });
+                    const anc = xx => xx > W - padR - 34 ? 'end' : (xx < padL + 34 ? 'start' : 'middle');
+                    const hilo =
+                        '<circle cx="' + fx(X(hi.t)) + '" cy="' + fx(Y(hi.c)) + '" r="2.4" fill="#0f2748"/>' +
+                        '<text x="' + fx(X(hi.t)) + '" y="' + fx(Y(hi.c) - 6) + '" text-anchor="' + anc(X(hi.t)) + '" fill="#334155" font-size="9.5" font-weight="700">最高 ' + this.formatPrice(hi.c) + '</text>' +
+                        '<circle cx="' + fx(X(lo.t)) + '" cy="' + fx(Y(lo.c)) + '" r="2.4" fill="#0f2748"/>' +
+                        '<text x="' + fx(X(lo.t)) + '" y="' + fx(Y(lo.c) + 13) + '" text-anchor="' + anc(X(lo.t)) + '" fill="#64748b" font-size="9.5" font-weight="700">最低 ' + this.formatPrice(lo.c) + '</text>';
                     const lx = fx(X(tMax)), ly = fx(Y(pts[pts.length - 1].c));
                     return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">' +
                         '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity="0.26"/><stop offset="1" stop-color="#2563eb" stop-opacity="0.01"/></linearGradient></defs>' +
@@ -366,7 +387,7 @@
                         bl(ko, '#b8935a', 'KO') + bl(strike, '#64748b', 'Strike', '5 3') + bl(ki, '#dc2626', 'KI', '5 3') +
                         '<path d="' + line + '" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
                         '<circle cx="' + lx + '" cy="' + ly + '" r="3.6" fill="#1d4ed8" stroke="#fff" stroke-width="1.5"/>' +
-                        obsLine + dot + '</svg>';
+                        obsLine + hilo + dot + '</svg>';
                 },
                 buildPrintHTML(i) {
                     const st = (i.stocks || []).filter(s => s.code);
@@ -380,12 +401,14 @@
                         let badges = '';
                         if (this.isStockKO(i, s)) badges += '<span class="bdg ko">曾達KO</span>';
                         if (this.isStockKI(i, s)) badges += '<span class="bdg ki">曾觸KI</span>';
+                        const odClose = this.closeNear(s, this.parseDate(i.date).getTime() / 1000);
+                        const odPrice = odClose != null ? this.formatPrice(odClose) : this.formatPrice(s.current);
                         return '<div class="srow"><div class="sinfo">' +
                             '<div class="stag">標的 ' + (idx + 1) + '</div>' +
                             '<div class="scode">' + s.code.replace('.T', '') + badges + '</div>' +
                             '<div class="sname">' + this.getStockName(s.code) + '</div>' +
                             '<table class="sprices">' +
-                            '<tr><td>前一日收盤</td><td class="v">' + this.formatPrice(s.current) + '</td></tr>' +
+                            '<tr><td>下單日價</td><td class="v">' + odPrice + '</td></tr>' +
                             '<tr><td>KO 出場價</td><td class="v ko">' + this.formatPrice(s.init) + '</td></tr>' +
                             '<tr><td>Strike 履約價</td><td class="v st">' + strike + '</td></tr>' +
                             '<tr><td>KI 下限價</td><td class="v ki">' + ki + '</td></tr>' +
@@ -409,7 +432,7 @@
                         '.stag{display:inline-block;background:#b8935a;color:#fff;font-size:11px;font-weight:800;padding:2px 10px;border-radius:6px;letter-spacing:1px}' +
                         '.scode{font-size:26px;font-weight:900;color:#1d4ed8;margin-top:7px;line-height:1.15}' +
                         '.bdg{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;vertical-align:middle;margin-left:5px}' +
-                        '.bdg.ko{background:#b8935a;color:#fff}.bdg.ki{background:#dc2626;color:#fff}' +
+                        '.bdg.ko{background:#dc2626;color:#fff}.bdg.ki{background:#dc2626;color:#fff}' +
                         '.sname{font-size:13px;color:#64748b;font-weight:700;margin-bottom:8px}' +
                         '.sprices{width:100%;border-collapse:collapse;font-size:13px}' +
                         '.sprices td{padding:6px 4px;border-bottom:1px solid #f1f5f9;font-weight:700;color:#475569}' +
