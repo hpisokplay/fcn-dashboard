@@ -112,7 +112,7 @@
             <div v-if="view === 'client'" class="space-y-4 fade-in">
                 <div class="flex items-center gap-3 flex-wrap">
                     <select v-model="selectedClient" class="flex-1 min-w-[200px] p-4 rounded-3xl bg-white shadow-sm font-black text-blue-600 outline-none text-lg">
-                        <option value="">— 選擇客戶 —</option>
+                        <option value="">全部客戶</option>
                         <option v-for="c in clientNames" :key="c" :value="c">{{ c }}</option>
                     </select>
                     <button @click="exportSelectedClient" class="bg-emerald-600 text-white font-black rounded-2xl px-6 py-4 text-base whitespace-nowrap shadow-sm"><i class="fa-solid fa-table-list mr-2"></i>匯出客戶總表</button>
@@ -749,12 +749,24 @@
                     return tags.length ? tags.join('・') : '<span style="color:#16a34a">正常</span>';
                 },
                 exportSelectedClient() {
-                    if (!this.selectedClient) { alert('請先從下拉選單選擇客戶'); return; }
-                    this.exportClientReport(this.selectedClient);
+                    // 「全部客戶」(空值) → 匯出所有客戶，各客戶分頁；否則匯出選定客戶
+                    if (this.selectedClient) this.exportClientReport(this.selectedClient);
+                    else this.exportAllClients();
                 },
                 exportClientReport(name) {
+                    const sec = this._clientSection(name);
+                    if (!sec) { alert('查無此客戶的部位'); return; }
+                    this._openReport(sec, '客戶庫存總表 - ' + name);
+                },
+                exportAllClients() {
+                    const names = this.clientNames;
+                    if (!names.length) { alert('目前沒有任何客戶資料'); return; }
+                    const secs = names.map((n, idx) => '<section' + (idx ? ' style="page-break-before:always"' : '') + '>' + this._clientSection(n) + '</section>').join('');
+                    this._openReport(secs, '客戶庫存總表 - 全部客戶（' + names.length + ' 位）');
+                },
+                _clientSection(name) {
                     const items = this.inventory.filter(i => (i.client || '(未命名)') === name);
-                    if (!items.length) { alert('查無此客戶的部位'); return; }
+                    if (!items.length) return '';
                     const now = new Date();
                     const dstr = now.getFullYear() + '/' + (now.getMonth() + 1) + '/' + now.getDate();
                     const salesRow = items.find(i => i.sales);
@@ -796,9 +808,16 @@
                             body += '<tr class="' + (k === n - 1 ? 'grp' : '') + alt + '">' + (k === 0 ? grp : '') + cells + '</tr>';
                         });
                     });
-                    const html = '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>客戶庫存總表 - ' + name + '</title><style>' +
+                    return '<div class="hd"><div class="t">客戶庫存總表<small>FCN HOLDINGS · CLIENT SUMMARY</small></div>' +
+                        '<div class="meta"><b style="font-size:20px">' + name + '</b>　業務：<b>' + sales + '</b>　部位：<b>' + items.length + ' 檔</b><br>' + (tot.join('　') || '—') + '　報價日期：<b>' + dstr + '</b></div></div>' +
+                        '<table class="big"><thead><tr><th>SN</th><th>幣別</th><th>票息</th><th>金額(萬)</th><th>下單日</th><th>觀察起日</th><th>到期日</th><th>連結標的</th><th>現價</th><th>KO價</th><th>Strike價</th><th>KI價</th><th>表現</th><th>狀態</th></tr></thead><tbody>' + body + '</tbody></table>' +
+                        '<div class="ft">◎ 本報告僅供內部參考，一切以實際成交狀況為主 ◎ 現價為最近一次更新之收盤價 ◎ KO／Strike／KI 為換算後之價格水準　◎ 狀態依每日收盤價自動判定</div>';
+                },
+                _openReport(bodyHTML, title) {
+                    const html = '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>' + title + '</title><style>' +
                         '@page{size:A4 landscape;margin:9mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
                         'body{font-family:system-ui,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;color:#13294b;margin:0;padding:6px 12px}' +
+                        'section{padding-top:6px}' +
                         '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0f2748;padding-bottom:10px;margin-bottom:12px}' +
                         '.hd .t{font-size:28px;font-weight:900;letter-spacing:2px;color:#0f2748}.hd .t small{display:block;font-size:11px;font-weight:700;letter-spacing:4px;color:#b8935a;margin-top:3px}' +
                         '.hd .meta{text-align:right;font-size:13px;color:#475569;line-height:1.7}.hd .meta b{color:#0f2748}' +
@@ -806,16 +825,12 @@
                         'table.big th{background:#0f2748;color:#fff;font-weight:800;padding:8px 5px;border:1px solid #0f2748;white-space:nowrap}' +
                         'table.big td{border:1px solid #dbe1ea;padding:7px 6px;vertical-align:middle}' +
                         'td.c{text-align:center}td.l{text-align:left}td.b{font-weight:900}' +
-                        'tr.alt td{background:#f7f9fc}tr.grp td{border-bottom:2px solid #cbd5e1}' +
+                        'tr.alt td{background:#f7f9fc}tr.grp td{border-bottom:2px solid #cbd5e1}tr{page-break-inside:avoid}' +
                         '.ft{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:8px;font-size:10.5px;color:#94a3b8;text-align:center;letter-spacing:.4px}' +
-                        '</style></head><body>' +
-                        '<div class="hd"><div class="t">客戶庫存總表<small>FCN HOLDINGS · CLIENT SUMMARY</small></div>' +
-                        '<div class="meta"><b style="font-size:20px">' + name + '</b>　業務：<b>' + sales + '</b>　部位：<b>' + items.length + ' 檔</b><br>' + (tot.join('　') || '—') + '　報價日期：<b>' + dstr + '</b></div></div>' +
-                        '<table class="big"><thead><tr><th>SN</th><th>幣別</th><th>票息</th><th>金額(萬)</th><th>下單日</th><th>觀察起日</th><th>到期日</th><th>連結標的</th><th>現價</th><th>KO價</th><th>Strike價</th><th>KI價</th><th>表現</th><th>狀態</th></tr></thead><tbody>' + body + '</tbody></table>' +
-                        '<div class="ft">◎ 本報告僅供內部參考，一切以實際成交狀況為主 ◎ 現價為最近一次更新之收盤價 ◎ KO／Strike／KI 為換算後之價格水準　◎ 狀態依每日收盤價自動判定</div>' +
+                        '</style></head><body>' + bodyHTML +
                         '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},400)}<\/scr' + 'ipt></body></html>';
                     const w = window.open('', '_blank');
-                    if (!w) { alert('請允許彈出視窗，才能開啟客戶總表'); return; }
+                    if (!w) { alert('請允許彈出視窗，才能開啟報表'); return; }
                     w.document.open(); w.document.write(html); w.document.close();
                 },
                 formatNum(n) { return n ? Math.floor(n).toLocaleString() : '0'; },
