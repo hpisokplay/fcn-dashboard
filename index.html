@@ -105,14 +105,14 @@
                         <label class="block font-bold text-gray-500">下單日<input type="date" v-model="form.date" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">到期日<input type="date" v-model="form.expiry" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                     </div>
-                    <h3 class="font-black mt-5 mb-2 text-gray-500 text-sm">標的（最多 4 檔・日股代號記得加 .T，例 7974.T）</h3>
+                    <h3 class="font-black mt-5 mb-2 text-gray-500 text-sm">標的（最多 5 檔・日股代號記得加 .T，例 7974.T）</h3>
                     <div class="space-y-2">
                         <div v-for="(st,idx) in form.stocks" :key="idx" class="flex gap-2 items-center">
                             <input v-model="st.code" placeholder="代號" class="flex-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-blue-600 uppercase">
-                            <input type="number" step="0.01" v-model.number="st.init" placeholder="期初價" class="flex-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800">
+                            <input type="number" step="0.01" v-model.number="st.init" placeholder="KO價" class="flex-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800">
                             <button @click="form.stocks.splice(idx,1)" class="text-red-500 font-black px-2">✕</button>
                         </div>
-                        <button v-if="form.stocks.length<4" @click="form.stocks.push({code:'',init:null})" class="text-blue-600 font-black text-sm">＋ 加一檔標的</button>
+                        <button v-if="form.stocks.length<5" @click="form.stocks.push({code:'',init:null})" class="text-blue-600 font-black text-sm">＋ 加一檔標的</button>
                     </div>
                     <div class="flex gap-2 mt-6">
                         <button @click="submitEntry" class="flex-1 bg-slate-900 text-white p-3.5 rounded-2xl font-black">{{ editIndex===null ? '新增到列表' : '更新' }}</button>
@@ -132,7 +132,8 @@
                             <button @click="exportExcel" class="bg-teal-600 text-white px-4 py-2 rounded-xl font-black text-sm">📊 匯出(含現價)</button>
                             <button @click="downloadCSV" class="bg-slate-600 text-white px-4 py-2 rounded-xl font-black text-sm">⬇️ 下載備份</button>
                             <input v-model="githubToken" type="password" placeholder="GitHub Token" class="text-xs bg-gray-100 p-2 rounded-lg w-36 font-mono outline-none">
-                            <button @click="saveAllToGithub" :disabled="isUploading" :class="['px-4 py-2 rounded-xl font-black text-sm text-white', dirty ? 'bg-blue-600 animate-pulse' : 'bg-blue-600']">{{ isUploading ? '儲存中…' : '💾 儲存到 GitHub' }}</button>
+                            <button @click="saveAllToGithub" :disabled="isUploading" :class="['px-4 py-2 rounded-xl font-black text-sm text-white', dirty ? 'bg-blue-600 animate-pulse' : 'bg-blue-600']">{{ isUploading ? '處理中…' : '💾 儲存到 GitHub' }}</button>
+                            <button @click="runPriceSchedule" :disabled="isUploading" class="bg-orange-500 text-white px-4 py-2 rounded-xl font-black text-sm">🔄 報價排程(抓2年歷史)</button>
                         </div>
                     </div>
                     <div class="space-y-2">
@@ -184,7 +185,7 @@
                             <p class="text-[9px] font-bold text-gray-400 mb-1 h-5 overflow-hidden text-ellipsis">{{ getStockName(s.code) }}</p>
                             <p class="text-xl font-black leading-none my-1 tracking-tighter text-slate-800">{{ formatPrice(s.current) }}</p>
                             <div class="text-[8px] font-bold text-gray-400 border-t border-gray-50 pt-1 mt-1 leading-tight">
-                                <p>KO: <span class="text-slate-800 font-black">{{ formatPrice(s.init * (item.koP/100)) }}</span></p>
+                                <p>KO: <span class="text-slate-800 font-black">{{ formatPrice(s.init) }}</span></p>
                                 <p>KI: <span class="text-slate-800 font-black">{{ item.kiP > 0 ? formatPrice(s.init * (item.kiP/100)) : 'None' }}</span></p>
                             </div>
                             <p class="text-[11px] font-black mt-1" :class="perfColor(item, s)">{{ getPerf(item, s) }}%</p>
@@ -221,7 +222,7 @@
                 perfColor(i,s){
                     if (!s.current || s.current <= 0) return 'text-gray-300';
                     const p = parseFloat(this.getPerf(i,s));
-                    if(p >= i.koP) return 'text-success';
+                    if(p >= 100) return 'text-success';
                     if(p <= i.kiP) return 'text-danger';
                     return 'text-gray-400';
                 },
@@ -251,7 +252,7 @@
                     if (this.checkIsLocked(i)) return false; // 還在鎖定期不算
                     const start = this.parseDate(i.koStart);
                     const highest = this.getHighestSince(s, start);
-                    return highest >= (s.init * i.koP / 100);
+                    return highest >= (s.init);
                 },
                 isLocked(i){
                     if(!i.koStart) return false;
@@ -347,9 +348,9 @@
                             if (isNaN(start.getTime())) return false;
                             const diff = Math.ceil((start - now) / 86400000);
                             if (diff < 0 || diff > 3) return false;
-                            const koCount = i.stocks.filter(s => s.current > 0 && ((s.current/s.init)*100) >= i.koP).length;
-                            const lastStock = i.stocks.find(s => s.current > 0 && ((s.current/s.init)*100) < i.koP);
-                            const isNearPrice = lastStock && (lastStock.current / (lastStock.init * i.koP / 100)) >= 0.97;
+                            const koCount = i.stocks.filter(s => s.current > 0 && s.current >= s.init).length;
+                            const lastStock = i.stocks.find(s => s.current > 0 && s.current < s.init);
+                            const isNearPrice = lastStock && (lastStock.current / lastStock.init) >= 0.97;
                             return (i.stocks.length === koCount || (i.stocks.length - koCount === 1 && isNearPrice));
                         } catch(e) { return false; }
                     });
@@ -365,7 +366,7 @@
                         const start = this.parseDate(i.koStart);
                         return i.stocks && i.stocks.some(s => {
                             const highest = this.getHighestSince(s, start);
-                            return highest >= (s.init * i.koP / 100);
+                            return highest >= (s.init);
                         });
                     });
                 },
@@ -380,7 +381,7 @@
                         const start = this.parseDate(i.koStart);
                         const passedStocks = (i.stocks || []).filter(s => {
                             const highest = this.getHighestSince(s, start);
-                            return highest >= (s.init * i.koP / 100);
+                            return highest >= (s.init);
                         });
 
                         // 條件1: 只剩一檔 *歷史上沒 KO 過*
@@ -389,11 +390,11 @@
                         // 條件2: 那檔沒過的，*目前* 價格已經 >= 97%
                         const failedStock = i.stocks.find(s => {
                             const highest = this.getHighestSince(s, start);
-                            return highest < (s.init * i.koP / 100);
+                            return highest < (s.init);
                         });
 
                         if (!failedStock) return false;
-                        return failedStock.current >= ((failedStock.init * i.koP / 100) * 0.97);
+                        return failedStock.current >= (failedStock.init * 0.97);
                     });
                 },
                 expiringList() {
@@ -415,7 +416,7 @@
                         // 每一檔標的，在觀察日後，都曾經(Highest)高過 KO
                         return i.stocks && i.stocks.length > 0 && i.stocks.every(s => {
                              const highest = this.getHighestSince(s, start);
-                             return highest >= (s.init * i.koP / 100);
+                             return highest >= (s.init);
                         });
                     });
                 },
@@ -636,13 +637,13 @@
                     XLSX.writeFile(wb, `FCN客戶表_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
                 },
                 inventoryToCSV() {
-                    const cols = ['branch','branchCode','account','idno','client','sn','isin','currency','coupon','koP','strikeP','kiP','tradeType','sales','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init'];
+                    const cols = ['branch','branchCode','account','idno','client','sn','isin','currency','coupon','koP','strikeP','kiP','tradeType','sales','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init','s5_code','s5_init'];
                     const esc = v => { if (v == null) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
                     const lines = [cols.join(',')];
                     this.inventory.forEach(it => {
                         const st = it.stocks || [];
                         const row = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, client:it.client, sn:it.sn, isin:it.isin, currency:it.currency, coupon:it.coupon, koP:it.koP, strikeP:it.strikeP, kiP:it.kiP, tradeType:it.tradeType, sales:it.sales, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount };
-                        for (let i = 0; i < 4; i++) { row['s'+(i+1)+'_code'] = st[i] ? st[i].code : ''; row['s'+(i+1)+'_init'] = st[i] ? st[i].init : ''; }
+                        for (let i = 0; i < 5; i++) { row['s'+(i+1)+'_code'] = st[i] ? st[i].code : ''; row['s'+(i+1)+'_init'] = st[i] ? st[i].init : ''; }
                         lines.push(cols.map(c => esc(row[c])).join(','));
                     });
                     return lines.join('\n');
@@ -656,7 +657,7 @@
                         }
                         if (!this.checkIsLocked(i)) {
                             const st = this.parseDate(i.koStart);
-                            if ((i.stocks || []).some(s => { const hi = this.getHighestSince(s, st); return hi >= (s.init * i.koP / 100); })) parts.push('曾達KO');
+                            if ((i.stocks || []).some(s => { const hi = this.getHighestSince(s, st); return hi >= (s.init); })) parts.push('曾達KO');
                         }
                     } catch (e) {}
                     return parts.length ? parts.join('、') : '正常';
@@ -674,7 +675,7 @@
                             '下單日': it.date, '觀察起日': it.koStart, '到期日': it.expiry,
                             'KO(%)': it.koP, 'KI(%)': it.kiP, 'PUT(%)': it.strikeP,
                         };
-                        for (let i = 0; i < 4; i++) {
+                        for (let i = 0; i < 5; i++) {
                             const s = st[i];
                             row['標的' + (i+1)] = s ? s.code : '';
                             row['期初' + (i+1)] = s ? s.init : '';
@@ -690,6 +691,34 @@
                     const d = new Date();
                     const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
                     XLSX.writeFile(wb, `FCN部位_${ymd}.xlsx`);
+                },
+                async runPriceSchedule() {
+                    if (!this.githubToken) { alert('請先貼上 GitHub Token（跟儲存用的同一個）'); return; }
+                    if (!this.inventory.length) { alert('目前沒有資料，請先匯入客戶表與商品主檔。'); return; }
+                    if (!confirm('會先儲存目前資料，再啟動報價排程，去抓「表單中所有美股+日股」的 2 年收盤歷史。\n\n確定執行？')) return;
+                    this.isUploading = true;
+                    try {
+                        const owner = 'hpisokplay', repo = 'fcn-dashboard';
+                        localStorage.setItem('fcn_token', this.githubToken);
+                        // 1) 先存 data.csv，讓排程看得到所有標的代號
+                        const content = btoa(unescape(encodeURIComponent(this.inventoryToCSV())));
+                        let sha;
+                        const g = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data.csv`, { headers: { 'Authorization': `token ${this.githubToken}` } });
+                        if (g.ok) sha = (await g.json()).sha;
+                        const pr = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data.csv`, {
+                            method: 'PUT', headers: { 'Authorization': `token ${this.githubToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message: 'data.csv before price run', content, sha })
+                        });
+                        if (!pr.ok) { const e = await pr.json().catch(() => ({})); alert('儲存資料失敗，無法啟動排程：' + (e.message || pr.status)); this.isUploading = false; return; }
+                        this.dirty = false;
+                        // 2) 觸發報價 workflow
+                        const d = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/prices.yml/dispatches`, {
+                            method: 'POST', headers: { 'Authorization': `token ${this.githubToken}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ref: 'main' })
+                        });
+                        if (d.status === 204) alert('✅ 報價排程已啟動！\n正在抓取所有標的（美股+日股）的 2 年收盤歷史，約 1–3 分鐘。\n完成後重新整理網頁即可。');
+                        else { const e = await d.json().catch(() => ({})); alert('排程啟動失敗：' + (e.message || d.status) + '\n（資料已存好，也可到 GitHub Actions 手動 Run workflow）'); }
+                    } catch (e) { alert('錯誤：' + e.message); } finally { this.isUploading = false; }
                 },
                 async saveAllToGithub() {
                     if (!this.githubToken) { alert('請先貼上 GitHub Token'); return; }
@@ -740,7 +769,7 @@
                                 const n = this.n;
                                 this.inventory = results.data.map(row => {
                                     const stocks = [];
-                                    for(let i=1; i<=4; i++) if(row[`s${i}_code`]) stocks.push({
+                                    for(let i=1; i<=5; i++) if(row[`s${i}_code`]) stocks.push({
                                         code: String(row[`s${i}_code`]).trim(),
                                         init: n(row[`s${i}_init`]),
                                         current: n(row[`s${i}_init`]),

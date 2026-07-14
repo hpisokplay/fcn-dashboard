@@ -1,1 +1,1 @@
-branch,branchCode,account,idno,client,sn,isin,currency,coupon,koP,strikeP,kiP,tradeType,sales,koStart,date,expiry,amount,s1_code,s1_init,s2_code,s2_init,s3_code,s3_init,s4_code,s4_init
+branch,branchCode,account,idno,client,sn,isin,currency,coupon,koP,strikeP,kiP,tradeType,sales,koStart,date,expiry,amount,s1_code,s1_init,s2_code,s2_init,s3_code,s3_init,s4_code,s4_init,s5_code,s5_init
