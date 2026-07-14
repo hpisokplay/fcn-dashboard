@@ -125,7 +125,9 @@
                         <h3 class="font-black text-slate-800">目前資料（{{ inventory.length }} 筆）<span v-if="dirty" class="text-red-500 text-xs ml-1 align-middle">● 尚未儲存</span></h3>
                         <div class="flex gap-2 items-center flex-wrap">
                             <input ref="importInput" type="file" accept=".xlsx,.xls,.csv" @change="importFile" class="hidden">
-                            <button @click="triggerImport" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-black text-sm">📥 匯入 Excel</button>
+                            <button @click="triggerImport" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-black text-sm">📥 匯入客戶表</button>
+                            <input ref="masterInput" type="file" accept=".xlsx,.xls,.csv" @change="importMaster" class="hidden">
+                            <button @click="triggerMaster" class="bg-purple-600 text-white px-4 py-2 rounded-xl font-black text-sm">📥 匯入商品主檔(補標的)</button>
                             <button @click="exportOriginal" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-sm">📤 匯出(原表)</button>
                             <button @click="exportExcel" class="bg-teal-600 text-white px-4 py-2 rounded-xl font-black text-sm">📊 匯出(含現價)</button>
                             <button @click="downloadCSV" class="bg-slate-600 text-white px-4 py-2 rounded-xl font-black text-sm">⬇️ 下載備份</button>
@@ -554,6 +556,67 @@
                         this.view = 'entry';
                         alert(`匯入成功：${items.length} 筆！\n\n接下來請逐筆按「編輯」補上標的股票代號與初始價，\n完成後再按「💾 儲存到 GitHub」。`);
                     } catch (err) { alert('匯入失敗：' + err.message); }
+                    e.target.value = '';
+                },
+                convTicker(raw) {
+                    const s = String(raw == null ? '' : raw).trim();
+                    if (!s) return '';
+                    const p = s.split(/\s+/);
+                    if (p.length >= 2) {
+                        const mkt = p[p.length - 1].toUpperCase();
+                        if (mkt === 'JP') return p[0] + '.T';
+                        if (mkt === 'US') return p[0].toUpperCase();
+                        return p[0].toUpperCase();
+                    }
+                    return s.toUpperCase();
+                },
+                triggerMaster() { this.$refs.masterInput.click(); },
+                async importMaster(e) {
+                    const file = e.target.files[0]; if (!file) return;
+                    if (!this.inventory.length) { alert('請先「匯入 Excel」把客戶表匯入，再匯入商品主檔來補標的。'); e.target.value = ''; return; }
+                    try {
+                        let aoa;
+                        if (file.name.toLowerCase().endsWith('.csv')) {
+                            const text = (await file.text()).replace(/^﻿/, '');
+                            aoa = Papa.parse(text, { skipEmptyLines: true }).data;
+                        } else {
+                            const buf = await file.arrayBuffer();
+                            const wb = XLSX.read(buf, { cellDates: true });
+                            aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+                        }
+                        if (!aoa.length) { alert('檔案是空的'); e.target.value = ''; return; }
+                        const H = aoa[0].map(x => String(x == null ? '' : x).replace(/[\s　]/g, ''));
+                        const iCode = H.findIndex(h => h.includes('商品代碼') || h.includes('商品編碼'));
+                        const iKoStart = H.findIndex(h => h.includes('KO觀察') || h.includes('觀察起始'));
+                        const stockCols = []; H.forEach((h, idx) => { if (/連結標的/.test(h)) stockCols.push(idx); });
+                        if (iCode < 0 || !stockCols.length) { alert('讀不到「商品代碼」或「連結標的」欄，請確認這是商品主檔。'); e.target.value = ''; return; }
+                        const map = {};
+                        for (let r = 1; r < aoa.length; r++) {
+                            const row = aoa[r]; const code = String(row[iCode] == null ? '' : row[iCode]).trim(); if (!code) continue;
+                            const koStart = iKoStart >= 0 ? this.toISO(row[iKoStart]) : '';
+                            const stocks = [];
+                            for (const c of stockCols) {
+                                let koCol = -1;
+                                for (let k = c + 1; k < H.length; k++) { if (/連結標的/.test(H[k])) break; if (H[k].includes('KO價')) { koCol = k; break; } }
+                                const tk = this.convTicker(row[c]);
+                                const ko = koCol >= 0 ? this.n(row[koCol]) : null;
+                                if (tk && ko != null) stocks.push({ code: tk, init: ko, current: ko, history: null });
+                            }
+                            map[code] = { koStart, stocks };
+                        }
+                        let matched = 0; const miss = [];
+                        this.inventory.forEach(it => {
+                            const m = map[it.sn];
+                            if (m) { if (m.koStart) it.koStart = m.koStart; it.stocks = m.stocks.map(s => ({ ...s })); matched++; }
+                            else miss.push(it.sn);
+                        });
+                        this.dirty = true;
+                        this.fetchRealPrices();
+                        let msg = `商品主檔比對完成！\n✅ 成功補上 ${matched} 筆的「觀察起始日 + 標的 + 期初價(用KO價)」。`;
+                        if (miss.length) msg += `\n⚠️ 有 ${miss.length} 筆在主檔找不到對應商品代碼（未變動）：\n` + miss.slice(0, 8).join('、') + (miss.length > 8 ? ' …' : '');
+                        msg += '\n\n請確認後按「💾 儲存到 GitHub」。';
+                        alert(msg);
+                    } catch (err) { alert('匯入商品主檔失敗：' + err.message); }
                     e.target.value = '';
                 },
                 exportOriginal() {
