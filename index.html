@@ -213,7 +213,8 @@
                                 <span :class="[item.currency === 'JPY' ? 'jpy-tag' : 'usd-tag']" style="font-size:16px;padding:4px 14px">{{ item.currency }}</span>
                                 <span class="font-black text-slate-900 leading-none" style="font-size:30px">{{ (!item.amount) ? '交割中' : formatNum(item.amount) + ' 萬' }}</span>
                             </div>
-                            <button @click="printCard" title="列印橫式報告" class="mt-2" style="color:#94a3b8;font-size:13px;font-weight:700;background:transparent"><i class="fa-solid fa-print mr-1"></i>列印</button>
+                            <div class="text-sm text-gray-400 font-bold mt-1">{{ todayStr() }}</div>
+                            <button @click="printCard" title="列印橫式報告" class="mt-1" style="color:#94a3b8;font-size:13px;font-weight:700;background:transparent"><i class="fa-solid fa-print mr-1"></i>列印</button>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-7">
@@ -221,13 +222,12 @@
                             <div v-if="isStockKI(item, s)" class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full font-black shadow z-10 whitespace-nowrap" style="font-size:15px">⚠ 觸及KI</div>
                             <div v-else-if="isStockKO(item, s)" class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full font-black shadow z-10 whitespace-nowrap" style="font-size:15px">★ 曾達KO</div>
 
-                            <p class="text-3xl font-black text-blue-600 leading-tight mt-1">{{ s.code.replace('.T', '') }}</p>
-                            <p class="text-lg font-bold text-gray-400 mb-1">{{ getStockName(s.code) }}</p>
-                            <p class="font-black leading-none my-2 text-slate-900" style="font-size:40px">{{ formatPrice(s.current) }}</p>
+                            <p class="font-black text-blue-600 leading-tight mt-1" style="font-size:26px">{{ s.code.replace('.T', '') }} <span class="text-slate-700" style="font-size:24px">{{ getStockName(s.code) }}</span></p>
+                            <p class="font-black leading-none my-3 text-slate-900" style="font-size:40px">{{ formatPrice(s.current) }}<span v-if="s.current" class="font-bold text-gray-400" style="font-size:20px"> 元</span></p>
                             <div class="font-bold text-gray-500 border-t-2 border-gray-200 pt-2 mt-1 space-y-1" style="font-size:17px">
-                                <p>KO價：<span class="text-slate-900 font-black">{{ formatPrice(s.init) }}</span></p>
-                                <p>Strike價：<span class="text-slate-900 font-black">{{ item.strikeP > 0 ? formatPrice(s.init * (item.strikeP/100)) : '無' }}</span></p>
-                                <p>KI價：<span class="text-slate-900 font-black">{{ item.kiP > 0 ? formatPrice(s.init * (item.kiP/100)) : '無' }}</span></p>
+                                <p>KO價：<span class="text-slate-900 font-black">{{ formatPrice(s.init) }} 元</span></p>
+                                <p>Strike價：<span class="text-slate-900 font-black">{{ item.strikeP > 0 ? formatPrice(s.init * (item.strikeP/100)) + ' 元' : '無' }}</span></p>
+                                <p>KI價：<span class="text-slate-900 font-black">{{ item.kiP > 0 ? formatPrice(s.init * (item.kiP/100)) + ' 元' : '無' }}</span></p>
                             </div>
                             <p class="text-3xl font-black mt-2" :class="perfColor(item, s)">{{ getPerf(item, s) }}%</p>
                             <div v-if="koHitLabel(item, s)" class="font-black text-blue-800 bg-blue-100 rounded-lg px-2 py-1.5 mt-2 leading-snug" style="font-size:15px">
@@ -275,6 +275,7 @@
             `,
             methods: {
                 formatNum(n){ return n ? Math.floor(n).toLocaleString() : '0'; },
+                todayStr(){ const d = new Date(); return d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0'); },
                 formatPrice(n){
                     if (!n || n == 0) return '---';
                     return (Math.floor(parseFloat(n) * 100) / 100).toFixed(2);
