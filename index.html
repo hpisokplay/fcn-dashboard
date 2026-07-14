@@ -124,7 +124,10 @@
                     <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                         <h3 class="font-black text-slate-800">目前資料（{{ inventory.length }} 筆）<span v-if="dirty" class="text-red-500 text-xs ml-1 align-middle">● 尚未儲存</span></h3>
                         <div class="flex gap-2 items-center flex-wrap">
-                            <button @click="exportExcel" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-sm">📊 匯出 Excel</button>
+                            <input ref="importInput" type="file" accept=".xlsx,.xls,.csv" @change="importFile" class="hidden">
+                            <button @click="triggerImport" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-black text-sm">📥 匯入 Excel</button>
+                            <button @click="exportOriginal" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-sm">📤 匯出(原表)</button>
+                            <button @click="exportExcel" class="bg-teal-600 text-white px-4 py-2 rounded-xl font-black text-sm">📊 匯出(含現價)</button>
                             <button @click="downloadCSV" class="bg-slate-600 text-white px-4 py-2 rounded-xl font-black text-sm">⬇️ 下載備份</button>
                             <input v-model="githubToken" type="password" placeholder="GitHub Token" class="text-xs bg-gray-100 p-2 rounded-lg w-36 font-mono outline-none">
                             <button @click="saveAllToGithub" :disabled="isUploading" :class="['px-4 py-2 rounded-xl font-black text-sm text-white', dirty ? 'bg-blue-600 animate-pulse' : 'bg-blue-600']">{{ isUploading ? '儲存中…' : '💾 儲存到 GitHub' }}</button>
@@ -303,6 +306,7 @@
                     form: { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:105, kiP:60, strikeP:100, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] },
                     editIndex: null,
                     dirty: false,
+                    editExtra: {},
                     githubToken: localStorage.getItem('fcn_token') || '',
                     selectedFile: null, fileName: '', isUploading: false,
                     inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達',
@@ -467,12 +471,13 @@
                 resetForm() {
                     this.form = { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:105, kiP:60, strikeP:100, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] };
                     this.editIndex = null;
+                    this.editExtra = {};
                 },
                 submitEntry() {
                     const f = this.form;
                     if (!f.client) { alert('請輸入客戶'); return; }
                     const stocks = (f.stocks || []).filter(s => s.code).map(s => ({ code: String(s.code).trim().toUpperCase(), init: s.init, current: s.init, history: null }));
-                    const item = { client:f.client, sn:f.sn, sales:f.sales, currency:f.currency, coupon:f.coupon, koP:f.koP, kiP:f.kiP, strikeP:f.strikeP, koStart:f.koStart, date:f.date, expiry:f.expiry, amount:f.amount, stocks };
+                    const item = { ...this.editExtra, client:f.client, sn:f.sn, sales:f.sales, currency:f.currency, coupon:f.coupon, koP:f.koP, kiP:f.kiP, strikeP:f.strikeP, koStart:f.koStart, date:f.date, expiry:f.expiry, amount:f.amount, stocks };
                     if (this.editIndex === null) this.inventory.push(item);
                     else this.inventory.splice(this.editIndex, 1, item);
                     this.dirty = true;
@@ -483,6 +488,7 @@
                     const it = this.inventory[idx];
                     this.form = { client:it.client, sn:it.sn, sales:it.sales, currency:it.currency, coupon:it.coupon, koP:it.koP, kiP:it.kiP, strikeP:it.strikeP, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount, stocks:(it.stocks||[]).map(s => ({ code:s.code, init:s.init })) };
                     if (!this.form.stocks.length) this.form.stocks = [{code:'',init:null}];
+                    this.editExtra = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, isin:it.isin, tradeType:it.tradeType };
                     this.editIndex = idx;
                     window.scrollTo({ top:0, behavior:'smooth' });
                 },
@@ -498,13 +504,81 @@
                     document.body.appendChild(a); a.click(); a.remove();
                     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
                 },
+                n(v) { if (v == null || v === '') return null; const x = parseFloat(String(v).replace(/,/g, '').trim()); return isNaN(x) ? null : x; },
+                pickCol(row, header) {
+                    if (row[header] !== undefined) return row[header];
+                    const norm = s => String(s).replace(/[\s　]/g, '').replace(/（/g, '(').replace(/）/g, ')');
+                    const t = norm(header);
+                    for (const k in row) if (norm(k) === t) return row[k];
+                    return undefined;
+                },
+                toISO(v) {
+                    if (v == null || v === '') return '';
+                    if (v instanceof Date && !isNaN(v)) return v.getFullYear() + '-' + String(v.getMonth()+1).padStart(2,'0') + '-' + String(v.getDate()).padStart(2,'0');
+                    const s = String(v).trim().replace(/\//g, '-');
+                    const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+                    if (m) return m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0');
+                    if (/^\d+(\.\d+)?$/.test(s)) { const d = new Date(Math.round((+s - 25569) * 86400 * 1000)); if (!isNaN(d)) return this.toISO(d); }
+                    return s;
+                },
+                fromISO(v) { return v ? String(v).replace(/-/g, '/') : ''; },
+                triggerImport() { this.$refs.importInput.click(); },
+                async importFile(e) {
+                    const file = e.target.files[0]; if (!file) return;
+                    if (!confirm('匯入會「清空目前所有資料」並以這個檔案為準（含你手打的標的/初始價會被清掉）。\n建議先按「⬇️ 下載備份」。\n\n確定匯入？')) { e.target.value = ''; return; }
+                    try {
+                        let rows;
+                        if (file.name.toLowerCase().endsWith('.csv')) {
+                            const text = await file.text();
+                            rows = Papa.parse(text, { header: true, skipEmptyLines: true, transformHeader: h => h.trim().replace(/^﻿/, '') }).data;
+                        } else {
+                            const buf = await file.arrayBuffer();
+                            const wb = XLSX.read(buf, { cellDates: true });
+                            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+                        }
+                        const g = (r, h) => this.pickCol(r, h);
+                        const items = rows.map(r => ({
+                            branch: String(g(r,'分公司名') ?? '').trim(), branchCode: String(g(r,'分公司') ?? '').trim(),
+                            account: String(g(r,'帳號') ?? '').trim(), idno: String(g(r,'身分證號') ?? '').trim(),
+                            client: String(g(r,'姓名') ?? '').trim(), sn: String(g(r,'商品編碼') ?? '').trim(), isin: String(g(r,'ISIN') ?? '').trim(),
+                            currency: String(g(r,'計價幣別') ?? '').trim() || 'USD',
+                            date: this.toISO(g(r,'下單日')), expiry: this.toISO(g(r,'到期日')),
+                            amount: (this.n(g(r,'庫存金額')) != null) ? this.n(g(r,'庫存金額')) / 10000 : null,
+                            coupon: this.n(g(r,'配息年率(%)')), koP: this.n(g(r,'KO價(%)')), strikeP: this.n(g(r,'履約價(%)')), kiP: this.n(g(r,'KI價(%)')),
+                            tradeType: String(g(r,'交易方式') ?? '').trim(), sales: String(g(r,'營業員') ?? '').trim(),
+                            koStart: '', stocks: []
+                        })).filter(it => it.client || it.sn);
+                        if (!items.length) { alert('檔案裡沒有讀到資料，請確認表頭是否正確（姓名、商品編碼…）'); e.target.value = ''; return; }
+                        this.inventory = items;
+                        this.dirty = true;
+                        this.view = 'entry';
+                        alert(`匯入成功：${items.length} 筆！\n\n接下來請逐筆按「編輯」補上標的股票代號與初始價，\n完成後再按「💾 儲存到 GitHub」。`);
+                    } catch (err) { alert('匯入失敗：' + err.message); }
+                    e.target.value = '';
+                },
+                exportOriginal() {
+                    if (!this.inventory.length) { alert('目前沒有資料'); return; }
+                    const H = ['分公司名','分公司','帳號','身分證號','姓名','商品編碼','ISIN','計價幣別','下單日','到期日','庫存金額','配息年率(%)','KO價(%)','履約價(%)','KI價(%)','交易方式','營業員'];
+                    const rows = this.inventory.map(it => ({
+                        '分公司名': it.branch || '', '分公司': it.branchCode || '', '帳號': it.account || '', '身分證號': it.idno || '',
+                        '姓名': it.client || '', '商品編碼': it.sn || '', 'ISIN': it.isin || '', '計價幣別': it.currency || '',
+                        '下單日': this.fromISO(it.date), '到期日': this.fromISO(it.expiry),
+                        '庫存金額': (it.amount != null) ? Math.round(it.amount * 10000) : '',
+                        '配息年率(%)': it.coupon, 'KO價(%)': it.koP, '履約價(%)': it.strikeP, 'KI價(%)': it.kiP,
+                        '交易方式': it.tradeType || '', '營業員': it.sales || ''
+                    }));
+                    const ws = XLSX.utils.json_to_sheet(rows, { header: H });
+                    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'FCN客戶表');
+                    const d = new Date();
+                    XLSX.writeFile(wb, `FCN客戶表_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
+                },
                 inventoryToCSV() {
-                    const cols = ['client','sn','sales','currency','coupon','koP','kiP','strikeP','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init'];
+                    const cols = ['branch','branchCode','account','idno','client','sn','isin','currency','coupon','koP','strikeP','kiP','tradeType','sales','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init'];
                     const esc = v => { if (v == null) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
                     const lines = [cols.join(',')];
                     this.inventory.forEach(it => {
                         const st = it.stocks || [];
-                        const row = { client:it.client, sn:it.sn, sales:it.sales, currency:it.currency, coupon:it.coupon, koP:it.koP, kiP:it.kiP, strikeP:it.strikeP, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount };
+                        const row = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, client:it.client, sn:it.sn, isin:it.isin, currency:it.currency, coupon:it.coupon, koP:it.koP, strikeP:it.strikeP, kiP:it.kiP, tradeType:it.tradeType, sales:it.sales, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount };
                         for (let i = 0; i < 4; i++) { row['s'+(i+1)+'_code'] = st[i] ? st[i].code : ''; row['s'+(i+1)+'_init'] = st[i] ? st[i].init : ''; }
                         lines.push(cols.map(c => esc(row[c])).join(','));
                     });
@@ -597,21 +671,23 @@
                         const response = await fetch('data.csv?v=' + Date.now());
                         const csvText = await response.text();
                         Papa.parse(csvText, {
-                            header: true, dynamicTyping: true, skipEmptyLines: true,
+                            header: true, dynamicTyping: false, skipEmptyLines: true,
                             transformHeader: h => h.trim().replace(/^﻿/, ""),
                             complete: (results) => {
+                                const n = this.n;
                                 this.inventory = results.data.map(row => {
                                     const stocks = [];
                                     for(let i=1; i<=4; i++) if(row[`s${i}_code`]) stocks.push({
                                         code: String(row[`s${i}_code`]).trim(),
-                                        init: row[`s${i}_init`],
-                                        current: row[`s${i}_init`],
+                                        init: n(row[`s${i}_init`]),
+                                        current: n(row[`s${i}_init`]),
                                         history: null
                                     });
                                     return {
                                         ...row,
                                         client: row.client ? String(row.client).trim() : '',
                                         sn: row.sn ? String(row.sn).trim() : '',
+                                        coupon: n(row.coupon), koP: n(row.koP), kiP: n(row.kiP), strikeP: n(row.strikeP), amount: n(row.amount),
                                         stocks: stocks
                                     };
                                 });
