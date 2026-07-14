@@ -170,7 +170,10 @@
                     <div v-if="isLocked(item)" class="absolute right-6 top-6"><span class="lock-badge" style="font-size:15px;padding:6px 14px"><i class="fa-solid fa-lock mr-1"></i>保證鎖定期</span></div>
                     <div class="flex justify-between items-start mb-7 gap-3 flex-wrap">
                         <div>
-                            <h3 class="text-4xl font-black text-gray-900 leading-none">{{ item.client }}</h3>
+                            <div class="flex items-center gap-3">
+                                <h3 class="text-4xl font-black text-gray-900 leading-none">{{ item.client }}</h3>
+                                <button @click="printCard" title="列印橫式報告" style="background:rgba(15,39,72,0.10);color:#0f2748;border:1px solid rgba(15,39,72,0.20);padding:5px 13px;border-radius:9999px;font-size:14px;font-weight:800;backdrop-filter:blur(2px);white-space:nowrap"><i class="fa-solid fa-print mr-1"></i>列印</button>
+                            </div>
                             <div class="flex items-center gap-2 mt-3 font-bold text-lg text-gray-500">{{ item.sn }} <span :class="[item.currency === 'JPY' ? 'jpy-tag' : 'usd-tag']" style="font-size:16px;padding:3px 10px">{{ item.currency }}</span></div>
                         </div>
                         <div class="text-right">
@@ -296,6 +299,122 @@
                     const d = this.deliveryInfo(i);
                     if (!d) return '';
                     return `${d.code}（最差 ${d.perf}%）· Strike 接股價 ${this.formatPrice(d.strike)}`;
+                },
+                // === 列印：橫式報告（近6個月走勢 + KO/Strike/KI 線 + 下單日紅點）===
+                chartSVG(i, s) {
+                    const W = 720, H = 250, padL = 54, padR = 74, padT = 18, padB = 38;
+                    const hist = s.history || {};
+                    const tsArr = hist.timestamp || [], clArr = hist.close || hist.high || [];
+                    const nowSec = Math.floor(new Date().getTime() / 1000);
+                    const cutoff = nowSec - 183 * 86400;
+                    const pts = [];
+                    for (let j = 0; j < tsArr.length; j++) {
+                        const t = tsArr[j], c = clArr[j];
+                        if (t >= cutoff && c != null && c > 0) pts.push({ t, c });
+                    }
+                    if (pts.length < 2) {
+                        return '<div style="display:flex;align-items:center;justify-content:center;height:' + H + 'px;color:#94a3b8;font-weight:700;font-size:14px">走勢資料尚未抓取 — 請先執行「報價排程」</div>';
+                    }
+                    const ko = s.init;
+                    const strike = i.strikeP > 0 ? s.init * i.strikeP / 100 : null;
+                    const ki = i.kiP > 0 ? s.init * i.kiP / 100 : null;
+                    const barriers = [ko, strike, ki].filter(v => v != null);
+                    let vMin = Math.min(...pts.map(p => p.c), ...barriers);
+                    let vMax = Math.max(...pts.map(p => p.c), ...barriers);
+                    const gap = (vMax - vMin) || 1; vMin -= gap * 0.08; vMax += gap * 0.10;
+                    const tMin = pts[0].t, tMax = pts[pts.length - 1].t;
+                    const X = t => padL + (t - tMin) / ((tMax - tMin) || 1) * (W - padL - padR);
+                    const Y = v => padT + (vMax - v) / ((vMax - vMin) || 1) * (H - padT - padB);
+                    const fx = n => n.toFixed(1);
+                    const gid = 'g' + s.code.replace(/[^a-zA-Z0-9]/g, '');
+                    let line = '', area = 'M' + fx(X(tMin)) + ' ' + fx(H - padB) + ' ';
+                    pts.forEach((p, k) => { const xx = fx(X(p.t)), yy = fx(Y(p.c)); line += (k ? 'L' : 'M') + xx + ' ' + yy + ' '; area += 'L' + xx + ' ' + yy + ' '; });
+                    area += 'L' + fx(X(tMax)) + ' ' + fx(H - padB) + ' Z';
+                    const bl = (v, color, label, dash) => v == null ? '' :
+                        '<line x1="' + padL + '" y1="' + fx(Y(v)) + '" x2="' + (W - padR) + '" y2="' + fx(Y(v)) + '" stroke="' + color + '" stroke-width="1.5" ' + (dash ? 'stroke-dasharray="' + dash + '" ' : '') + 'opacity="0.9"/>' +
+                        '<text x="' + (W - padR + 7) + '" y="' + fx(Y(v) + 3.5) + '" fill="' + color + '" font-size="11.5" font-weight="800">' + label + '</text>' +
+                        '<text x="' + (W - padR + 7) + '" y="' + fx(Y(v) + 15) + '" fill="' + color + '" font-size="10" opacity="0.75">' + this.formatPrice(v) + '</text>';
+                    const od = this.parseDate(i.date).getTime() / 1000;
+                    let dot = '';
+                    if (od >= tMin - 4 * 86400 && od <= tMax) {
+                        let best = pts[0]; pts.forEach(p => { if (Math.abs(p.t - od) < Math.abs(best.t - od)) best = p; });
+                        const dx = fx(X(best.t)), dy = fx(Y(best.c));
+                        dot = '<line x1="' + dx + '" y1="' + dy + '" x2="' + dx + '" y2="' + (padT + 16) + '" stroke="#e11d48" stroke-width="1" stroke-dasharray="2 2" opacity="0.55"/>' +
+                            '<circle cx="' + dx + '" cy="' + dy + '" r="10" fill="#e11d48" opacity="0.16"/>' +
+                            '<circle cx="' + dx + '" cy="' + dy + '" r="5" fill="#e11d48" stroke="#fff" stroke-width="1.8"/>' +
+                            '<text x="' + dx + '" y="' + (padT + 11) + '" text-anchor="middle" fill="#e11d48" font-size="10.5" font-weight="800">下單 ' + this._fmtDate(od) + '</text>';
+                    }
+                    let grid = '';
+                    for (let k = 0; k <= 4; k++) { const v = vMin + (vMax - vMin) * k / 4; const yy = fx(Y(v)); grid += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W - padR) + '" y2="' + yy + '" stroke="#eef1f5" stroke-width="1"/><text x="' + (padL - 8) + '" y="' + fx(Y(v) + 3.5) + '" text-anchor="end" fill="#94a3b8" font-size="10.5">' + this.formatPrice(v) + '</text>'; }
+                    for (let k = 0; k <= 6; k++) { const t = tMin + (tMax - tMin) * k / 6; const d = new Date(t * 1000); grid += '<text x="' + fx(X(t)) + '" y="' + (H - padB + 18) + '" text-anchor="middle" fill="#94a3b8" font-size="10">' + d.getFullYear() + '/' + (d.getMonth() + 1) + '</text>'; }
+                    const lx = fx(X(tMax)), ly = fx(Y(pts[pts.length - 1].c));
+                    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">' +
+                        '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity="0.26"/><stop offset="1" stop-color="#2563eb" stop-opacity="0.01"/></linearGradient></defs>' +
+                        grid +
+                        '<path d="' + area + '" fill="url(#' + gid + ')"/>' +
+                        bl(ko, '#b8935a', 'KO') + bl(strike, '#64748b', 'Strike', '5 3') + bl(ki, '#dc2626', 'KI', '5 3') +
+                        '<path d="' + line + '" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+                        '<circle cx="' + lx + '" cy="' + ly + '" r="3.6" fill="#1d4ed8" stroke="#fff" stroke-width="1.5"/>' +
+                        dot + '</svg>';
+                },
+                buildPrintHTML(i) {
+                    const st = (i.stocks || []).filter(s => s.code);
+                    const now = new Date();
+                    const dstr = now.getFullYear() + '/' + (now.getMonth() + 1) + '/' + now.getDate();
+                    let months = '';
+                    try { const d0 = this.parseDate(i.date), d1 = this.parseDate(i.expiry); months = Math.max(0, Math.round((d1 - d0) / (30.44 * 86400000))); } catch (e) { months = ''; }
+                    const rows = st.map((s, idx) => {
+                        const strike = i.strikeP > 0 ? this.formatPrice(s.init * i.strikeP / 100) : '無';
+                        const ki = i.kiP > 0 ? this.formatPrice(s.init * i.kiP / 100) : '無';
+                        return '<div class="srow"><div class="sinfo">' +
+                            '<div class="stag">標的 ' + (idx + 1) + '</div>' +
+                            '<div class="scode">' + s.code.replace('.T', '') + '</div>' +
+                            '<div class="sname">' + this.getStockName(s.code) + '</div>' +
+                            '<table class="sprices">' +
+                            '<tr><td>前一日收盤</td><td class="v">' + this.formatPrice(s.current) + '</td></tr>' +
+                            '<tr><td>KO 出場價</td><td class="v ko">' + this.formatPrice(s.init) + '</td></tr>' +
+                            '<tr><td>Strike 履約價</td><td class="v st">' + strike + '</td></tr>' +
+                            '<tr><td>KI 下限價</td><td class="v ki">' + ki + '</td></tr>' +
+                            '</table></div><div class="schart">' + this.chartSVG(i, s) + '</div></div>';
+                    }).join('');
+                    return '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>FCN 部位報告 - ' + (i.client || '') + '</title><style>' +
+                        '@page{size:A4 landscape;margin:9mm}' +
+                        '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+                        'body{font-family:system-ui,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;color:#13294b;margin:0;padding:4px 12px;background:#fff}' +
+                        '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0f2748;padding-bottom:10px}' +
+                        '.hd .t{font-size:30px;font-weight:900;letter-spacing:2px;color:#0f2748}' +
+                        '.hd .t small{display:block;font-size:11px;font-weight:700;letter-spacing:4px;color:#b8935a;margin-top:3px}' +
+                        '.hd .meta{text-align:right;font-size:13px;color:#475569;line-height:1.7}.hd .meta b{color:#0f2748}' +
+                        '.cond{width:100%;border-collapse:collapse;margin:12px 0 4px;font-size:13.5px}' +
+                        '.cond th{background:#0f2748;color:#fff;font-weight:800;padding:8px 6px;border:1px solid #0f2748}' +
+                        '.cond td{text-align:center;padding:9px 6px;border:1px solid #d9dee7;font-weight:800}.cond td.hl{color:#1d4ed8}' +
+                        '.legend{display:flex;gap:15px;font-size:11px;color:#64748b;font-weight:700;margin:8px 2px 0;justify-content:flex-end;align-items:center}' +
+                        '.legend i{display:inline-block;width:16px;height:0;border-top-width:3px;vertical-align:middle;margin-right:4px}' +
+                        '.srow{display:flex;gap:14px;align-items:stretch;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-top:12px;page-break-inside:avoid}' +
+                        '.sinfo{width:206px;flex:0 0 206px;border-right:1px solid #eef1f5;padding-right:12px}' +
+                        '.stag{display:inline-block;background:#b8935a;color:#fff;font-size:11px;font-weight:800;padding:2px 10px;border-radius:6px;letter-spacing:1px}' +
+                        '.scode{font-size:26px;font-weight:900;color:#1d4ed8;margin-top:7px;line-height:1}' +
+                        '.sname{font-size:13px;color:#64748b;font-weight:700;margin-bottom:8px}' +
+                        '.sprices{width:100%;border-collapse:collapse;font-size:13px}' +
+                        '.sprices td{padding:6px 4px;border-bottom:1px solid #f1f5f9;font-weight:700;color:#475569}' +
+                        '.sprices td.v{text-align:right;font-weight:900;color:#0f2748;font-variant-numeric:tabular-nums}' +
+                        '.sprices td.v.ko{color:#b8935a}.sprices td.v.ki{color:#dc2626}' +
+                        '.schart{flex:1;min-width:0;display:flex;align-items:center}' +
+                        '.ft{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:8px;font-size:10.5px;color:#94a3b8;text-align:center;letter-spacing:.4px}' +
+                        '</style></head><body>' +
+                        '<div class="hd"><div class="t">FCN 部位報告<small>FIXED COUPON NOTE · POSITION REVIEW</small></div>' +
+                        '<div class="meta"><b style="font-size:18px">' + (i.client || '') + '</b>　' + (i.sn || '') + '<br>業務：<b>' + (i.sales || '-') + '</b>　交割幣別：<b>' + (i.currency || '-') + '</b><br>報價日期：<b>' + dstr + '</b></div></div>' +
+                        '<table class="cond"><thead><tr><th>下單日</th><th>天期(月)</th><th>觀察起日</th><th>出場價 KO</th><th>履約價 Strike</th><th>下限價 KI</th><th>Coupon(年化)</th></tr></thead><tbody>' +
+                        '<tr><td>' + (i.date || '-') + '</td><td>' + months + '</td><td>' + (i.koStart || '-') + '</td><td class="hl">' + (i.koP || '-') + '%</td><td class="hl">' + (i.strikeP || '-') + '%</td><td class="hl">' + (i.kiP > 0 ? i.kiP + '%' : '無') + '</td><td class="hl">' + (i.coupon || '-') + '%</td></tr></tbody></table>' +
+                        '<div class="legend"><span><i style="border-color:#1d4ed8;border-top-style:solid"></i>收盤價</span><span><i style="border-color:#b8935a;border-top-style:solid"></i>KO</span><span><i style="border-color:#64748b;border-top-style:dashed"></i>Strike</span><span><i style="border-color:#dc2626;border-top-style:dashed"></i>KI</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e11d48;vertical-align:middle;margin-right:4px"></span>下單日</span></div>' +
+                        rows +
+                        '<div class="ft">◎ 本報告僅供內部參考，一切以實際成交狀況為主 ◎ 走勢為標的近 6 個月每日收盤價 ◎ KO／Strike／KI 為換算後之價格水準</div>' +
+                        '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},450)}<\/scr' + 'ipt></body></html>';
+                },
+                printCard() {
+                    const w = window.open('', '_blank');
+                    if (!w) { alert('請允許彈出視窗，才能開啟列印報告'); return; }
+                    w.document.open(); w.document.write(this.buildPrintHTML(this.item)); w.document.close();
                 },
                 // 判斷股票標記樣式
                 getStockClass(i, s) {
