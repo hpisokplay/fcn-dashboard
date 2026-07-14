@@ -52,7 +52,7 @@
                 <button @click="view = 'sales'" :class="['nav-btn', view === 'sales' ? 'active' : '']">按業務員</button>
                 <button @click="view = 'alerts'" :class="['nav-btn', view === 'alerts' ? 'active' : '']">預警中心</button>
                 <button @click="view = 'entry'" :class="['nav-btn', view === 'entry' ? 'active' : '']">資料輸入</button>
-                <button @click="view = 'admin_panel'" :class="['nav-btn', view.includes('admin') ? 'active' : '']"><i class="fa-solid fa-gear text-lg"></i></button>
+                <button @click="runPriceSchedule" :disabled="isUploading" class="nav-btn text-orange-600"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>報價排程</button>
                 <div class="ml-auto flex items-center pr-3">
                     <i @click="fetchRealPrices" class="fa-solid fa-rotate text-blue-500 cursor-pointer text-lg" :class="{'animate-spin': isSyncing}"></i>
                 </div>
@@ -123,17 +123,22 @@
                 <div class="fcn-card">
                     <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                         <h3 class="font-black text-slate-800">目前資料（{{ inventory.length }} 筆）<span v-if="dirty" class="text-red-500 text-xs ml-1 align-middle">● 尚未儲存</span></h3>
-                        <div class="flex gap-2 items-center flex-wrap">
-                            <input ref="importInput" type="file" accept=".xlsx,.xls,.csv" @change="importFile" class="hidden">
-                            <button @click="triggerImport" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-black text-sm">📥 匯入客戶表</button>
-                            <input ref="masterInput" type="file" accept=".xlsx,.xls,.csv" @change="importMaster" class="hidden">
-                            <button @click="triggerMaster" class="bg-purple-600 text-white px-4 py-2 rounded-xl font-black text-sm">📥 匯入商品主檔(補標的)</button>
-                            <button @click="exportOriginal" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-sm">📤 匯出(原表)</button>
-                            <button @click="exportExcel" class="bg-teal-600 text-white px-4 py-2 rounded-xl font-black text-sm">📊 匯出(含現價)</button>
-                            <button @click="downloadCSV" class="bg-slate-600 text-white px-4 py-2 rounded-xl font-black text-sm">⬇️ 下載備份</button>
-                            <input v-model="githubToken" type="password" placeholder="GitHub Token" class="text-xs bg-gray-100 p-2 rounded-lg w-36 font-mono outline-none">
-                            <button @click="saveAllToGithub" :disabled="isUploading" :class="['px-4 py-2 rounded-xl font-black text-sm text-white', dirty ? 'bg-blue-600 animate-pulse' : 'bg-blue-600']">{{ isUploading ? '處理中…' : '💾 儲存到 GitHub' }}</button>
-                            <button @click="runPriceSchedule" :disabled="isUploading" class="bg-orange-500 text-white px-4 py-2 rounded-xl font-black text-sm">🔄 報價排程(抓2年歷史)</button>
+                        <div class="space-y-3 w-full">
+                            <div class="flex gap-3 flex-wrap">
+                                <input ref="importInput" type="file" accept=".xlsx,.xls,.csv" @change="importFile" class="hidden">
+                                <button @click="triggerImport" class="bg-indigo-600 text-white px-5 py-3 rounded-xl font-black text-base">📥 匯入客戶表</button>
+                                <input ref="masterInput" type="file" accept=".xlsx,.xls,.csv" @change="importMaster" class="hidden">
+                                <button @click="triggerMaster" class="bg-purple-600 text-white px-5 py-3 rounded-xl font-black text-base">📥 匯入商品主檔(補標的)</button>
+                            </div>
+                            <div class="flex gap-3 flex-wrap">
+                                <button @click="exportBackup" class="bg-emerald-600 text-white px-5 py-3 rounded-xl font-black text-base">📦 匯出備份檔</button>
+                                <input ref="backupInput" type="file" accept=".xlsx,.xls,.csv" @change="importBackup" class="hidden">
+                                <button @click="triggerBackup" class="bg-cyan-600 text-white px-5 py-3 rounded-xl font-black text-base">📂 匯入備份檔</button>
+                            </div>
+                            <div class="flex gap-3 items-center flex-wrap">
+                                <input v-model="githubToken" type="password" placeholder="GitHub Token" class="text-sm bg-gray-100 p-3 rounded-lg w-44 font-mono outline-none">
+                                <button @click="saveAllToGithub" :disabled="isUploading" :class="['px-5 py-3 rounded-xl font-black text-base text-white', dirty ? 'bg-blue-600 animate-pulse' : 'bg-blue-600']">{{ isUploading ? '處理中…' : '💾 儲存到 GitHub' }}</button>
+                            </div>
                         </div>
                     </div>
                     <div class="space-y-2">
@@ -150,8 +155,6 @@
                 </div>
             </div>
 
-            <div v-if="view === 'admin_login'" class="fade-in max-w-sm mx-auto mt-10 text-center"><div class="fcn-card text-slate-800 text-center"><h3 class="font-black mb-4 text-gray-400 uppercase italic text-xs tracking-widest text-slate-800">Admin Security</h3><input v-model="adminPassInput" type="password" @keyup.enter="checkAdminPass" class="w-full p-4 rounded-2xl bg-gray-100 mb-4 text-center font-mono outline-none border-2 focus:border-blue-500 text-slate-800 shadow-sm"><button @click="checkAdminPass" class="w-full bg-slate-800 text-white p-4 rounded-2xl font-black text-white shadow-lg">VERIFY</button></div></div>
-            <div v-if="view === 'admin_panel'" class="fade-in space-y-4 text-center text-slate-800 max-w-sm mx-auto"><div class="fcn-card text-slate-800 text-left"><h2 class="text-xl font-black italic mb-6 text-center">CSV DATA SYNC</h2><div class="space-y-6 text-slate-800 font-mono"><input v-model="githubToken" type="password" placeholder="Token" class="w-full bg-gray-50 p-3 rounded-xl border-none font-mono text-center text-sm text-slate-800"><div class="border-4 border-dashed rounded-[2rem] p-10 cursor-pointer hover:bg-gray-50 text-slate-800 text-center"><input type="file" id="csvFile" @change="handleFileUpload" class="hidden text-slate-800"><label for="csvFile" class="block font-black text-gray-500 cursor-pointer">Choose data.csv</label></div><button @click="uploadToGithub" class="w-full bg-blue-600 text-white p-5 rounded-2xl font-black shadow-xl uppercase text-white">Sync GitHub</button></div></div></div>
         </template>
     </div>
 
@@ -650,6 +653,51 @@
                         msg += '\n\n請確認後按「💾 儲存到 GitHub」。';
                         alert(msg);
                     } catch (err) { alert('匯入商品主檔失敗：' + err.message); }
+                    e.target.value = '';
+                },
+                exportBackup() {
+                    if (!this.inventory.length) { alert('目前沒有資料'); return; }
+                    const cols = ['branch','branchCode','account','idno','client','sn','isin','currency','coupon','koP','strikeP','kiP','tradeType','sales','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init','s5_code','s5_init'];
+                    const rows = this.inventory.map(it => {
+                        const st = it.stocks || [];
+                        const r = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, client:it.client, sn:it.sn, isin:it.isin, currency:it.currency, coupon:it.coupon, koP:it.koP, strikeP:it.strikeP, kiP:it.kiP, tradeType:it.tradeType, sales:it.sales, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount };
+                        for (let i = 0; i < 5; i++) { r['s'+(i+1)+'_code'] = st[i] ? st[i].code : ''; r['s'+(i+1)+'_init'] = st[i] ? st[i].init : ''; }
+                        cols.forEach(c => { if (r[c] == null) r[c] = ''; });
+                        return r;
+                    });
+                    const ws = XLSX.utils.json_to_sheet(rows, { header: cols });
+                    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'FCN備份');
+                    const d = new Date();
+                    XLSX.writeFile(wb, `FCN備份_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
+                },
+                triggerBackup() { this.$refs.backupInput.click(); },
+                async importBackup(e) {
+                    const file = e.target.files[0]; if (!file) return;
+                    if (!confirm('匯入備份會「清空目前所有資料」並以備份檔為準。\n確定？')) { e.target.value = ''; return; }
+                    try {
+                        let rows;
+                        if (file.name.toLowerCase().endsWith('.csv')) {
+                            rows = Papa.parse((await file.text()).replace(/^﻿/, ''), { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data;
+                        } else {
+                            const wb = XLSX.read(await file.arrayBuffer(), { cellDates: false, raw: false });
+                            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+                        }
+                        const n = this.n;
+                        const items = rows.map(row => {
+                            const stocks = [];
+                            for (let i = 1; i <= 5; i++) { const c = row['s'+i+'_code']; if (c) stocks.push({ code: String(c).trim(), init: n(row['s'+i+'_init']), current: n(row['s'+i+'_init']), history: null }); }
+                            return {
+                                branch: String(row.branch||'').trim(), branchCode: String(row.branchCode||'').trim(), account: String(row.account||'').trim(), idno: String(row.idno||'').trim(),
+                                client: String(row.client||'').trim(), sn: String(row.sn||'').trim(), isin: String(row.isin||'').trim(), currency: String(row.currency||'').trim() || 'USD',
+                                coupon: n(row.coupon), koP: n(row.koP), strikeP: n(row.strikeP), kiP: n(row.kiP), tradeType: String(row.tradeType||'').trim(), sales: String(row.sales||'').trim(),
+                                koStart: String(row.koStart||'').trim(), date: String(row.date||'').trim(), expiry: String(row.expiry||'').trim(), amount: n(row.amount), stocks
+                            };
+                        }).filter(it => it.client || it.sn);
+                        if (!items.length) { alert('備份檔沒有讀到資料（請確認是「匯出備份檔」產生的檔）'); e.target.value = ''; return; }
+                        this.inventory = items; this.dirty = true;
+                        this.fetchRealPrices();
+                        alert(`已從備份還原 ${items.length} 筆！\n請按「💾 儲存到 GitHub」保存。`);
+                    } catch (err) { alert('匯入備份失敗：' + err.message); }
                     e.target.value = '';
                 },
                 exportOriginal() {
