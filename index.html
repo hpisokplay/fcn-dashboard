@@ -80,9 +80,7 @@
             </div>
 
             <div v-if="view === 'branch'" class="space-y-4 fade-in">
-                <h2 class="text-xl font-black px-2 italic uppercase text-slate-800 text-left tracking-tighter">Portfolio Summary</h2>
-
-                <div class="fcn-card shadow-xl text-white border-none bg-gradient-to-br from-emerald-600 to-teal-700">
+                <div class="fcn-card shadow-xl text-white border-none bg-blue-600">
                     <div class="flex justify-between items-start mb-3 text-white">
                         <div>
                             <div class="text-lg font-black tracking-wide">總部位 · 台幣計價</div>
@@ -93,20 +91,20 @@
                     <div class="text-5xl font-black italic font-mono tracking-tighter text-white">NT$ {{ formatNum(totalTWD) }} <span class="text-lg font-normal opacity-60 uppercase">萬</span></div>
                 </div>
 
-                <div class="fcn-card shadow-xl text-white border-none bg-blue-600">
-                    <div class="flex justify-between items-start mb-3 text-white">
+                <div class="fcn-card shadow-xl text-slate-900 border-none bg-amber-400">
+                    <div class="flex justify-between items-start mb-3 text-slate-900">
                         <div class="text-lg font-black tracking-wide">美金部位 · 美金計價</div>
-                        <span class="text-sm font-black opacity-80 whitespace-nowrap">{{ countUSD }}筆</span>
+                        <span class="text-sm font-black opacity-70 whitespace-nowrap">{{ countUSD }}筆</span>
                     </div>
-                    <div class="text-5xl font-black italic font-mono tracking-tighter text-white">$ {{ formatNum(totalUSD) }} <span class="text-lg font-normal opacity-50 uppercase">萬</span></div>
+                    <div class="text-5xl font-black italic font-mono tracking-tighter text-slate-900">$ {{ formatNum(totalUSD) }} <span class="text-lg font-normal opacity-60 uppercase">萬</span></div>
                 </div>
 
-                <div class="fcn-card shadow-xl text-white border-none bg-slate-800">
-                    <div class="flex justify-between items-start mb-3 text-white">
+                <div class="fcn-card shadow-xl text-slate-900 border-none bg-amber-400">
+                    <div class="flex justify-between items-start mb-3 text-slate-900">
                         <div class="text-lg font-black tracking-wide">日幣部位 · 日幣計價</div>
-                        <span class="text-sm font-black opacity-80 whitespace-nowrap">{{ countJPY }}筆</span>
+                        <span class="text-sm font-black opacity-70 whitespace-nowrap">{{ countJPY }}筆</span>
                     </div>
-                    <div class="text-5xl font-black italic font-mono tracking-tighter text-white">¥ {{ formatNum(totalJPY) }} <span class="text-lg font-normal opacity-50 uppercase">萬</span></div>
+                    <div class="text-5xl font-black italic font-mono tracking-tighter text-slate-900">¥ {{ formatNum(totalJPY) }} <span class="text-lg font-normal opacity-60 uppercase">萬</span></div>
                 </div>
             </div>
             <div v-if="view === 'client'" class="space-y-4 fade-in">
