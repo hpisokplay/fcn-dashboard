@@ -341,7 +341,7 @@
                 return {
                     view: 'branch', isLoggedIn: true, inputPass: '', password: '98388',
                     adminPassInput: '', adminPass: '983983',
-                    form: { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:105, kiP:60, strikeP:100, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] },
+                    form: { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:null, kiP:null, strikeP:null, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] },
                     editIndex: null,
                     dirty: false,
                     editExtra: {},
@@ -507,7 +507,7 @@
                 checkAdminPass() { if (this.adminPassInput === this.adminPass) { this.view = 'admin_panel'; } else { alert('ERR'); } },
                 handleFileUpload(e) { const f = e.target.files[0]; if(f){ this.selectedFile=f; this.fileName=f.name; } },
                 resetForm() {
-                    this.form = { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:105, kiP:60, strikeP:100, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] };
+                    this.form = { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:null, kiP:null, strikeP:null, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] };
                     this.editIndex = null;
                     this.editExtra = {};
                 },
