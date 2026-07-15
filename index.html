@@ -409,7 +409,7 @@
                     if (!d) return '';
                     return `${d.code}（最差 ${d.perf}%）· Strike 接股價 ${this.formatPrice(d.strike)}`;
                 },
-                // === 列印：橫式報告（近6個月走勢 + KO/Strike/KI 線 + 下單日紅點）===
+                // === 列印：橫式報告（近12個月走勢 + KO/Strike/KI 線 + 下單日紅點）===
                 closeNear(s, tsSec) {
                     const h = s.history || {}; const arr = h.close || h.high || []; const t = h.timestamp || [];
                     let best = null, bd = Infinity;
@@ -421,7 +421,7 @@
                     const hist = s.history || {};
                     const tsArr = hist.timestamp || [], clArr = hist.close || hist.high || [];
                     const nowSec = Math.floor(new Date().getTime() / 1000);
-                    const cutoff = nowSec - 183 * 86400;
+                    const cutoff = nowSec - 365 * 86400;
                     const pts = [];
                     for (let j = 0; j < tsArr.length; j++) {
                         const t = tsArr[j], c = clArr[j];
@@ -580,10 +580,10 @@
                         '<div class="ft">◎ 本報告僅供內部參考，一切以實際成交狀況為主 ◎ 現價為最近一次更新之收盤價 ◎ KO／Strike／KI 為換算後之價格水準 ◎ 狀態依每日收盤價自動判定</div>' +
                         '</section>' +
                         '<section class="pb">' +
-                        '<div class="hd"><div class="t" style="font-size:25px">標的走勢圖<small>UNDERLYING TREND · 近 6 個月每日收盤</small></div>' +
+                        '<div class="hd"><div class="t" style="font-size:25px">標的走勢圖<small>UNDERLYING TREND · 近 12 個月每日收盤</small></div>' +
                         '<div class="meta"><b style="font-size:16px">' + (i.client || '') + '</b>　' + (i.sn || '') + '　報價日期：<b>' + dstr + '</b></div></div>' +
                         legend + charts +
-                        '<div class="ft">◎ 走勢為標的近 6 個月每日收盤價 ◎ 紅點為下單日、紫線為觀察起日 ◎ KO／Strike／KI 為換算後之價格水準</div>' +
+                        '<div class="ft">◎ 走勢為標的近 12 個月每日收盤價 ◎ 紅點為下單日、紫線為觀察起日 ◎ KO／Strike／KI 為換算後之價格水準</div>' +
                         '</section>' +
                         '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},450)}<\/scr' + 'ipt></body></html>';
                 },
