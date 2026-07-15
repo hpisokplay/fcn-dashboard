@@ -46,7 +46,7 @@
         </div>
 
         <template v-if="isLoggedIn">
-            <div class="nav-header sticky top-4 z-[1000] scrollbar-hide text-slate-800">
+            <div v-if="!repMode" class="nav-header sticky top-4 z-[1000] scrollbar-hide text-slate-800">
                 <button @click="view = 'branch'" :class="['nav-btn', view === 'branch' ? 'active' : '']">資產管理</button>
                 <button @click="view = 'client'" :class="['nav-btn', view === 'client' ? 'active' : '']">按客戶</button>
                 <button @click="view = 'sales'" :class="['nav-btn', view === 'sales' ? 'active' : '']">按業務員</button>
@@ -63,7 +63,17 @@
                 <span v-if="lastUpdated">Refreshed: {{ lastUpdated }}</span>
             </div>
 
-            <div v-if="view === 'alerts'" class="space-y-4 fade-in">
+            <div v-if="repMode" class="space-y-4 fade-in">
+                <div class="fcn-card border-none shadow-xl bg-blue-600 text-white">
+                    <div class="text-sm font-bold opacity-80 uppercase tracking-widest">FCN 客戶部位</div>
+                    <div class="text-4xl font-black mt-1">業代 · {{ repName }}</div>
+                    <div class="text-base font-bold opacity-80 mt-3">共 {{ repClientCount }} 位客戶 · {{ repClientList.length }} 檔部位<span v-if="lastUpdated">　更新：{{ lastUpdated }}</span></div>
+                </div>
+                <div v-if="repClientList.length === 0" class="text-center py-20 text-gray-300 font-bold italic uppercase text-xs tracking-widest">目前沒有您的客戶資料</div>
+                <client-card v-for="item in repClientList" :item="item" :key="item.sn + item.client"></client-card>
+            </div>
+
+            <div v-if="view === 'alerts' && !repMode" class="space-y-4 fade-in">
                 <div class="flex bg-white rounded-2xl shadow-sm mb-4 overflow-x-auto text-slate-800 scrollbar-hide border border-gray-100">
                     <button @click="alertTab = 'ki'" :class="['risk-tab', alertTab === 'ki' ? 'active' : '']">觸及KI({{kiList.length}})</button>
                     <button @click="alertTab = 'obs'" :class="['risk-tab', alertTab === 'obs' ? 'active' : '']">即將觀察({{observationList.length}})</button>
@@ -117,7 +127,22 @@
                 </div>
                 <client-card v-for="item in clientViewList" :item="item" :key="item.sn + item.client"></client-card>
             </div>
-            <div v-if="view === 'sales'" class="space-y-4 fade-in text-slate-800 text-left"><select v-model="selectedSales" class="w-full p-4 rounded-3xl bg-white shadow-sm font-black text-blue-600 outline-none text-lg text-slate-800 font-mono"><option v-for="s in salesSummary" :value="s.name">{{ s.name }} ({{ s.count }} 筆)</option></select><client-card v-for="item in salesFilteredList" :item="item" :key="item.sn + item.client"></client-card></div>
+            <div v-if="view === 'sales'" class="space-y-4 fade-in text-slate-800 text-left">
+                <div class="fcn-card border border-gray-100 shadow-sm">
+                    <h2 class="text-2xl font-black mb-1"><i class="fa-solid fa-link text-blue-600 mr-2"></i>業務專屬連結</h2>
+                    <p class="text-base text-gray-500 font-bold mb-4">把連結傳給各業務，他們點開後只會看到「自己的客戶」，且資料會即時更新（不會看到別人的客戶）。</p>
+                    <div class="space-y-2">
+                        <div v-for="s in salesSummary" :key="s.name" class="flex justify-between items-center gap-3 bg-gray-50 rounded-2xl px-5 py-3">
+                            <div class="font-black text-slate-800 text-lg min-w-0">{{ s.name }} <span class="text-gray-400 font-bold text-sm">· {{ s.count }} 檔</span></div>
+                            <button @click="copyRepLink(s.name)" class="bg-blue-600 text-white font-black rounded-xl px-5 py-2.5 text-sm whitespace-nowrap flex-shrink-0"><i class="fa-solid fa-copy mr-1"></i>複製連結</button>
+                        </div>
+                        <div v-if="salesSummary.length === 0" class="text-center text-gray-300 py-6 font-bold italic text-xs uppercase">尚無業務資料</div>
+                    </div>
+                </div>
+                <h2 class="text-lg font-black px-2 text-slate-500">預覽業務客戶</h2>
+                <select v-model="selectedSales" class="w-full p-4 rounded-3xl bg-white shadow-sm font-black text-blue-600 outline-none text-lg text-slate-800 font-mono"><option v-for="s in salesSummary" :value="s.name">{{ s.name }} ({{ s.count }} 筆)</option></select>
+                <client-card v-for="item in salesFilteredList" :item="item" :key="item.sn + item.client"></client-card>
+            </div>
 
             <div v-if="view === 'entry'" class="space-y-4 fade-in text-slate-800 text-left">
                 <div class="fcn-card">
@@ -616,6 +641,7 @@
                     githubToken: localStorage.getItem('fcn_token') || '',
                     selectedFile: null, fileName: '', isUploading: false,
                     inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達', selectedClient: '',
+                    repMode: false, repName: '',
                     lastUpdated: '',
                     fx: { usdTwd: 0, jpyTwd: 0, ok: false, at: '' }
                 }
@@ -749,6 +775,12 @@
                 },
                 clientViewList() {
                     return this.selectedClient ? this.inventory.filter(i => (i.client || '(未命名)') === this.selectedClient) : this.inventory;
+                },
+                repClientList() {
+                    return this.inventory.filter(i => (i.sales || '') === this.repName);
+                },
+                repClientCount() {
+                    return new Set(this.repClientList.map(i => i.client || '')).size;
                 }
             },
             methods: {
@@ -882,6 +914,16 @@
                 formatNum(n) { return n ? Math.floor(n).toLocaleString() : '0'; },
                 formatPrice(n) { if (!n || n == 0) return '---'; return (Math.floor(parseFloat(n) * 100) / 100).toFixed(2); },
                 getStockName(c) { return stockNames[c] || c; },
+                repLink(name) { return location.origin + location.pathname + '?rep=' + encodeURIComponent(name); },
+                copyRepLink(name) {
+                    const url = this.repLink(name);
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(url).then(
+                            () => alert('已複製 ' + name + ' 的專屬連結：\n\n' + url + '\n\n把這串貼給 ' + name + '（LINE／Email 皆可）。'),
+                            () => prompt('複製此連結給 ' + name + '：', url)
+                        );
+                    } else { prompt('複製此連結給 ' + name + '：', url); }
+                },
                 login() { if (this.inputPass === this.password) { this.isLoggedIn = true; sessionStorage.setItem('fcn_auth', 'true'); } },
                 checkAdminPass() { if (this.adminPassInput === this.adminPass) { this.view = 'admin_panel'; } else { alert('ERR'); } },
                 handleFileUpload(e) { const f = e.target.files[0]; if(f){ this.selectedFile=f; this.fileName=f.name; } },
@@ -1310,6 +1352,8 @@
             },
             mounted() {
                 if (sessionStorage.getItem('fcn_auth') === 'true') this.isLoggedIn = true;
+                const rep = new URLSearchParams(location.search).get('rep');
+                if (rep) { this.repMode = true; this.repName = rep; this.view = 'rep'; this.isLoggedIn = true; document.title = 'FCN · ' + rep + ' 的客戶'; }
                 this.loadCSVData();
                 this.fetchFX();
                 setInterval(() => this.fetchRealPrices(), 60000);
