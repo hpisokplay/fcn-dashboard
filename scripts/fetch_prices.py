@@ -65,17 +65,39 @@ def fetch_chart(sym, retries=3):
             res = j["chart"]["result"][0]
             meta = res["meta"]
             q = res["indicators"]["quote"][0]
-            cur = meta.get("regularMarketPrice")
+            ts = list(res.get("timestamp") or [])
+            highs = list(q.get("high") or [])
+            lows = list(q.get("low") or [])
+            closes = list(q.get("close") or [])
+
+            # 只用「已收盤」的日收盤價，不用盤中即時價：
+            # 若該標的所屬市場此刻正在盤中，Yahoo 日K的最後一根是尚未收盤的即時K，
+            # 依各自交易時段（美股/日股皆準）判斷後直接捨棄，改用前一根已收盤的價格。
+            now = time.time()
+            reg = (meta.get("currentTradingPeriod") or {}).get("regular") or {}
+            s_start, s_end = reg.get("start"), reg.get("end")
+            market_open = bool(s_start and s_end and s_start <= now < s_end)
+            if market_open and closes:
+                ts, highs, lows, closes = ts[:-1], highs[:-1], lows[:-1], closes[:-1]
+
+            # 現價 = 最後一根「已收盤」的日收盤價
+            cur = None
+            for c in reversed(closes):
+                if c is not None:
+                    cur = c
+                    break
             if cur is None:
-                cur = meta.get("previousClose") or meta.get("chartPreviousClose")
+                cur = meta.get("chartPreviousClose") or meta.get("previousClose") or meta.get("regularMarketPrice")
+
             return {
                 "current": cur,
                 "prevClose": meta.get("chartPreviousClose"),
                 "currency": meta.get("currency"),
-                "timestamp": res.get("timestamp") or [],
-                "high": q.get("high") or [],
-                "low": q.get("low") or [],
-                "close": q.get("close") or [],
+                "market_open": market_open,
+                "timestamp": ts,
+                "high": highs,
+                "low": lows,
+                "close": closes,
             }
         except Exception as e:  # noqa
             print(f"  retry {i+1}/{retries} {sym}: {e}", file=sys.stderr)
