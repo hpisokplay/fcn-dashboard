@@ -326,7 +326,7 @@
                     if (!(i.kiP > 0)) return null;
                     const ki = s.init * i.kiP / 100;  // KI價
                     if (s.history && s.history.timestamp) {
-                        const start = this.parseDate(i.koStart || i.date).getTime() / 1000;
+                        const start = this.parseDate(i.date).getTime() / 1000;
                         const arr = s.history.close || s.history.low;
                         for (let j = 0; j < s.history.timestamp.length; j++) {
                             if (s.history.timestamp[j] >= start && arr[j] != null && arr[j] <= ki) {
@@ -351,7 +351,7 @@
                 },
                 hasBreachedKI(i) {
                     if (!i.stocks || i.kiP <= 0) return false;
-                    const dateLimit = this.parseDate(i.koStart || i.date);
+                    const dateLimit = this.parseDate(i.date);
                     return i.stocks.some(s => {
                         const lowest = this.getLowestSince(s, dateLimit);
                         return lowest > 0 && lowest <= (s.init * i.kiP / 100);
@@ -572,7 +572,7 @@
                 // 邏輯: 曾經跌破 KI (歷史最低 <= KI價)
                 isStockKI(i, s) {
                     if (i.kiP <= 0) return false;
-                    const dateLimit = this.parseDate(i.koStart || i.date);
+                    const dateLimit = this.parseDate(i.date);
                     const lowest = this.getLowestSince(s, dateLimit);
                     return lowest > 0 && lowest <= (s.init * i.kiP / 100);
                 },
@@ -664,7 +664,7 @@
                     // 觸及Ki: 下單日後到今天標的最低股價曾經有低於ki價格。
                     return this.inventory.filter(i => {
                         if (!i.stocks || i.kiP <= 0) return false;
-                        const dateLimit = this.parseDate(i.koStart || i.date);
+                        const dateLimit = this.parseDate(i.date);
                         return i.stocks.some(s => {
                             const lowest = this.getLowestSince(s, dateLimit);
                             return lowest > 0 && lowest <= (s.init * i.kiP / 100);
@@ -831,7 +831,7 @@
                 _stkStatus(i, s) {
                     const tags = [];
                     if (!this.checkIsLocked(i) && this.getHighestSince(s, this.parseDate(i.koStart)) >= s.init) tags.push('<b style="color:#dc2626">曾達KO</b>');
-                    if (i.kiP > 0 && this.getLowestSince(s, this.parseDate(i.koStart || i.date)) <= s.init * i.kiP / 100) tags.push('<b style="color:#dc2626">曾觸KI</b>');
+                    if (i.kiP > 0 && this.getLowestSince(s, this.parseDate(i.date)) <= s.init * i.kiP / 100) tags.push('<b style="color:#dc2626">曾觸KI</b>');
                     return tags.length ? tags.join('・') : '<span style="color:#16a34a">正常</span>';
                 },
                 exportSelectedClient() {
@@ -1173,7 +1173,7 @@
                     const parts = [];
                     try {
                         if (i.kiP > 0) {
-                            const dl = this.parseDate(i.koStart || i.date);
+                            const dl = this.parseDate(i.date);
                             if ((i.stocks || []).some(s => { const lo = this.getLowestSince(s, dl); return lo > 0 && lo <= (s.init * i.kiP / 100); })) parts.push('觸及KI');
                         }
                         if (!this.checkIsLocked(i)) {
