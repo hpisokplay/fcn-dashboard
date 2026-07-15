@@ -340,7 +340,7 @@
 
                     <div v-if="imgModal" class="img-modal" @click.self="imgModal=false">
                         <div class="img-modal-bar">
-                            <div class="imt">長按圖片即可儲存到相簿<small>共 2 張：部位明細、走勢圖（橫式，存檔後可放大檢視）</small></div>
+                            <div class="imt">長按圖片即可儲存到相簿<small>共 2 張：部位明細、走勢圖（與列印畫面相同）</small></div>
                             <button class="imx" @click="imgModal=false"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <div class="img-modal-scroll">
@@ -626,10 +626,14 @@
                     this.imaging = true;
                     let frame;
                     try {
-                        // 在隱藏的 iframe 裡以 A4 橫式寬度渲染報告（樣式隔離，不影響主頁）
+                        // 用「與列印畫面相同」的版面渲染：手機 Safari 對沒有 viewport meta 的
+                        // 列印文件是以 ~980px 版面寬度縮放顯示（就是按下列印看到的畫面），
+                        // 這裡以同樣寬度渲染，截出的圖與列印畫面完全一致、且完整不被裁切。
+                        const RW = 980;
+                        // 在隱藏的 iframe 裡渲染報告（樣式隔離，不影響主頁）
                         frame = document.createElement('iframe');
                         frame.setAttribute('aria-hidden', 'true');
-                        frame.style.cssText = 'position:fixed;left:-99999px;top:0;width:1123px;height:1600px;border:0;background:#fff';
+                        frame.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + RW + 'px;height:5000px;border:0;background:#fff';
                         document.body.appendChild(frame);
                         const doc = frame.contentDocument;
                         doc.open(); doc.write(this.buildPrintHTML(this.item, true)); doc.close();
