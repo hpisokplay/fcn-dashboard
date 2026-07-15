@@ -157,6 +157,7 @@
                         <label class="block font-bold text-gray-500">庫存金額(萬)<input type="number" v-model.number="form.amount" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">KO %<input type="number" step="0.01" v-model.number="form.koP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">KI %<input type="number" step="0.01" v-model.number="form.kiP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="col-span-2 flex items-center gap-3 font-bold text-gray-600 bg-red-50 rounded-xl px-4 py-3 cursor-pointer" style="border:1px solid #fecaca"><input type="checkbox" v-model="form.eki" class="w-5 h-5 accent-red-600"><span>此 KI 為 <b class="text-red-600">EKI（到期比價）</b>　<span class="text-gray-400 font-bold">不勾＝AKI（每日比價，最常見）</span></span></label>
                         <label class="block font-bold text-gray-500">Strike%<input type="number" step="0.01" v-model.number="form.strikeP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">觀察起日<input type="date" v-model="form.koStart" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="block font-bold text-gray-500">下單日<input type="date" v-model="form.date" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
@@ -251,7 +252,7 @@
                             <div class="font-bold text-gray-500 border-t-2 border-gray-200 pt-2 mt-1 space-y-1" style="font-size:17px">
                                 <p>KO價：<span class="text-slate-900 font-black">{{ formatPrice(s.init) }} 元</span></p>
                                 <p>Strike價：<span class="text-slate-900 font-black">{{ item.strikeP > 0 ? formatPrice(s.init * (item.strikeP/100)) + ' 元' : '無' }}</span></p>
-                                <p>KI價：<span class="text-slate-900 font-black">{{ item.kiP > 0 ? formatPrice(s.init * (item.kiP/100)) + ' 元' : '無' }}</span></p>
+                                <p>KI價<span v-if="item.eki" class="text-red-600 font-black">（EKI）</span>：<span class="text-slate-900 font-black">{{ item.kiP > 0 ? formatPrice(s.init * (item.kiP/100)) + ' 元' : '無' }}</span></p>
                             </div>
                             <p class="text-3xl font-black mt-2" :class="perfColor(item, s)">{{ getPerf(item, s) }}%</p>
                             <div v-if="koHitLabel(item, s)" class="font-black text-blue-800 bg-blue-100 rounded-lg px-2 py-1.5 mt-2 leading-snug" style="font-size:15px">
@@ -274,7 +275,7 @@
                             <div class="font-black leading-none mt-1 text-slate-700" style="font-size:26px">{{ item.strikeP }}%</div>
                         </div>
                         <div class="rounded-2xl py-3 text-center" :class="hasBreachedKI(item) ? 'bg-red-100 border border-red-300' : 'bg-red-50 border border-red-100'">
-                            <div class="font-bold text-red-500" style="font-size:15px">KI 下限價</div>
+                            <div class="font-bold text-red-500" style="font-size:15px">KI 下限價 <span v-if="item.eki" class="inline-block bg-red-600 text-white rounded align-middle" style="font-size:11px;padding:1px 7px;font-weight:900">EKI</span></div>
                             <div class="font-black leading-none mt-1 text-red-600" style="font-size:26px">{{ item.kiP > 0 ? item.kiP + '%' : '無' }}</div>
                         </div>
                     </div>
@@ -635,7 +636,7 @@
                 return {
                     view: 'branch', isLoggedIn: true, inputPass: '', password: '98388',
                     adminPassInput: '', adminPass: '983983',
-                    form: { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:null, kiP:null, strikeP:null, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] },
+                    form: { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:null, kiP:null, strikeP:null, eki:false, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] },
                     editIndex: null,
                     dirty: false,
                     editExtra: {},
@@ -948,7 +949,7 @@
                 checkAdminPass() { if (this.adminPassInput === this.adminPass) { this.view = 'admin_panel'; } else { alert('ERR'); } },
                 handleFileUpload(e) { const f = e.target.files[0]; if(f){ this.selectedFile=f; this.fileName=f.name; } },
                 resetForm() {
-                    this.form = { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:null, kiP:null, strikeP:null, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] };
+                    this.form = { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:null, kiP:null, strikeP:null, eki:false, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] };
                     this.editIndex = null;
                     this.editExtra = {};
                 },
@@ -956,7 +957,7 @@
                     const f = this.form;
                     if (!f.client) { alert('請輸入客戶'); return; }
                     const stocks = (f.stocks || []).filter(s => s.code).map(s => ({ code: String(s.code).trim().toUpperCase(), init: s.init, current: s.init, history: null }));
-                    const item = { ...this.editExtra, client:f.client, sn:f.sn, sales:f.sales, currency:f.currency, coupon:f.coupon, koP:f.koP, kiP:f.kiP, strikeP:f.strikeP, koStart:f.koStart, date:f.date, expiry:f.expiry, amount:f.amount, stocks };
+                    const item = { ...this.editExtra, client:f.client, sn:f.sn, sales:f.sales, currency:f.currency, coupon:f.coupon, koP:f.koP, kiP:f.kiP, strikeP:f.strikeP, eki:!!f.eki, koStart:f.koStart, date:f.date, expiry:f.expiry, amount:f.amount, stocks };
                     if (this.editIndex === null) this.inventory.push(item);
                     else this.inventory.splice(this.editIndex, 1, item);
                     this.dirty = true;
@@ -965,7 +966,7 @@
                 },
                 editEntry(idx) {
                     const it = this.inventory[idx];
-                    this.form = { client:it.client, sn:it.sn, sales:it.sales, currency:it.currency, coupon:it.coupon, koP:it.koP, kiP:it.kiP, strikeP:it.strikeP, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount, stocks:(it.stocks||[]).map(s => ({ code:s.code, init:s.init })) };
+                    this.form = { client:it.client, sn:it.sn, sales:it.sales, currency:it.currency, coupon:it.coupon, koP:it.koP, kiP:it.kiP, strikeP:it.strikeP, eki:!!it.eki, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount, stocks:(it.stocks||[]).map(s => ({ code:s.code, init:s.init })) };
                     if (!this.form.stocks.length) this.form.stocks = [{code:'',init:null}];
                     this.editExtra = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, isin:it.isin, tradeType:it.tradeType };
                     this.editIndex = idx;
@@ -1098,10 +1099,10 @@
                 },
                 exportBackup() {
                     if (!this.inventory.length) { alert('目前沒有資料'); return; }
-                    const cols = ['branch','branchCode','account','idno','client','sn','isin','currency','coupon','koP','strikeP','kiP','tradeType','sales','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init','s5_code','s5_init'];
+                    const cols = ['branch','branchCode','account','idno','client','sn','isin','currency','coupon','koP','strikeP','kiP','eki','tradeType','sales','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init','s5_code','s5_init'];
                     const rows = this.inventory.map(it => {
                         const st = it.stocks || [];
-                        const r = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, client:it.client, sn:it.sn, isin:it.isin, currency:it.currency, coupon:it.coupon, koP:it.koP, strikeP:it.strikeP, kiP:it.kiP, tradeType:it.tradeType, sales:it.sales, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount };
+                        const r = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, client:it.client, sn:it.sn, isin:it.isin, currency:it.currency, coupon:it.coupon, koP:it.koP, strikeP:it.strikeP, kiP:it.kiP, eki:(it.eki ? '1' : ''), tradeType:it.tradeType, sales:it.sales, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount };
                         for (let i = 0; i < 5; i++) { r['s'+(i+1)+'_code'] = st[i] ? st[i].code : ''; r['s'+(i+1)+'_init'] = st[i] ? st[i].init : ''; }
                         cols.forEach(c => { if (r[c] == null) r[c] = ''; });
                         return r;
@@ -1130,7 +1131,7 @@
                             return {
                                 branch: String(row.branch||'').trim(), branchCode: String(row.branchCode||'').trim(), account: String(row.account||'').trim(), idno: String(row.idno||'').trim(),
                                 client: String(row.client||'').trim(), sn: String(row.sn||'').trim(), isin: String(row.isin||'').trim(), currency: String(row.currency||'').trim() || 'USD',
-                                coupon: n(row.coupon), koP: n(row.koP), strikeP: n(row.strikeP), kiP: n(row.kiP), tradeType: String(row.tradeType||'').trim(), sales: this.cleanSales(row.sales),
+                                coupon: n(row.coupon), koP: n(row.koP), strikeP: n(row.strikeP), kiP: n(row.kiP), eki: (row.eki === '1' || row.eki === 'true' || row.eki === true), tradeType: String(row.tradeType||'').trim(), sales: this.cleanSales(row.sales),
                                 koStart: String(row.koStart||'').trim(), date: String(row.date||'').trim(), expiry: String(row.expiry||'').trim(), amount: n(row.amount), stocks
                             };
                         }).filter(it => it.client || it.sn);
@@ -1158,12 +1159,12 @@
                     XLSX.writeFile(wb, `FCN客戶表_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
                 },
                 inventoryToCSV() {
-                    const cols = ['branch','branchCode','account','idno','client','sn','isin','currency','coupon','koP','strikeP','kiP','tradeType','sales','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init','s5_code','s5_init'];
+                    const cols = ['branch','branchCode','account','idno','client','sn','isin','currency','coupon','koP','strikeP','kiP','eki','tradeType','sales','koStart','date','expiry','amount','s1_code','s1_init','s2_code','s2_init','s3_code','s3_init','s4_code','s4_init','s5_code','s5_init'];
                     const esc = v => { if (v == null) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
                     const lines = [cols.join(',')];
                     this.inventory.forEach(it => {
                         const st = it.stocks || [];
-                        const row = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, client:it.client, sn:it.sn, isin:it.isin, currency:it.currency, coupon:it.coupon, koP:it.koP, strikeP:it.strikeP, kiP:it.kiP, tradeType:it.tradeType, sales:it.sales, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount };
+                        const row = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, client:it.client, sn:it.sn, isin:it.isin, currency:it.currency, coupon:it.coupon, koP:it.koP, strikeP:it.strikeP, kiP:it.kiP, eki:(it.eki ? '1' : ''), tradeType:it.tradeType, sales:it.sales, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount };
                         for (let i = 0; i < 5; i++) { row['s'+(i+1)+'_code'] = st[i] ? st[i].code : ''; row['s'+(i+1)+'_init'] = st[i] ? st[i].init : ''; }
                         lines.push(cols.map(c => esc(row[c])).join(','));
                     });
@@ -1301,6 +1302,7 @@
                                         client: row.client ? String(row.client).trim() : '',
                                         sn: row.sn ? String(row.sn).trim() : '',
                                         sales: this.cleanSales(row.sales),
+                                        eki: (row.eki === '1' || row.eki === 'true' || row.eki === true),
                                         coupon: n(row.coupon), koP: n(row.koP), kiP: n(row.kiP), strikeP: n(row.strikeP), amount: n(row.amount),
                                         stocks: stocks
                                     };
