@@ -641,7 +641,7 @@
                     githubToken: localStorage.getItem('fcn_token') || '',
                     selectedFile: null, fileName: '', isUploading: false,
                     inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達', selectedClient: '',
-                    repMode: false, repName: '',
+                    repMode: false, repToken: '',
                     lastUpdated: '',
                     fx: { usdTwd: 0, jpyTwd: 0, ok: false, at: '' }
                 }
@@ -776,8 +776,15 @@
                 clientViewList() {
                     return this.selectedClient ? this.inventory.filter(i => (i.client || '(未命名)') === this.selectedClient) : this.inventory;
                 },
+                repName() {
+                    if (!this.repToken) return '';
+                    const names = [...new Set(this.inventory.map(i => i.sales).filter(Boolean))];
+                    const byToken = names.find(n => this.repTokenOf(n) === this.repToken);
+                    if (byToken) return byToken;
+                    return names.includes(this.repToken) ? this.repToken : ''; // 相容舊的名字連結
+                },
                 repClientList() {
-                    return this.inventory.filter(i => (i.sales || '') === this.repName);
+                    return this.repName ? this.inventory.filter(i => (i.sales || '') === this.repName) : [];
                 },
                 repClientCount() {
                     return new Set(this.repClientList.map(i => i.client || '')).size;
@@ -914,7 +921,18 @@
                 formatNum(n) { return n ? Math.floor(n).toLocaleString() : '0'; },
                 formatPrice(n) { if (!n || n == 0) return '---'; return (Math.floor(parseFloat(n) * 100) / 100).toFixed(2); },
                 getStockName(c) { return stockNames[c] || c; },
-                repLink(name) { return location.origin + location.pathname + '?rep=' + encodeURIComponent(name); },
+                repTokenOf(name) {
+                    // 由名字產生固定、不可反推名字的英數 token（外人看不出對應誰）
+                    const s = 'fcn-shield-2026|' + name;
+                    let h1 = 0x811c9dc5 >>> 0, h2 = 0x1000193 >>> 0;
+                    for (let k = 0; k < s.length; k++) {
+                        const c = s.charCodeAt(k);
+                        h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+                        h2 = Math.imul((h2 + c) >>> 0, 0x85ebca77) >>> 0;
+                    }
+                    return (h1.toString(36) + h2.toString(36)).slice(0, 10);
+                },
+                repLink(name) { return location.origin + location.pathname + '?rep=' + this.repTokenOf(name); },
                 copyRepLink(name) {
                     const url = this.repLink(name);
                     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1353,7 +1371,7 @@
             mounted() {
                 if (sessionStorage.getItem('fcn_auth') === 'true') this.isLoggedIn = true;
                 const rep = new URLSearchParams(location.search).get('rep');
-                if (rep) { this.repMode = true; this.repName = rep; this.view = 'rep'; this.isLoggedIn = true; document.title = 'FCN · ' + rep + ' 的客戶'; }
+                if (rep) { this.repMode = true; this.repToken = rep; this.view = 'rep'; this.isLoggedIn = true; document.title = 'FCN 客戶部位'; }
                 this.loadCSVData();
                 this.fetchFX();
                 setInterval(() => this.fetchRealPrices(), 60000);
