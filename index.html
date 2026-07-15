@@ -228,7 +228,7 @@
                         <div>
                             <div class="flex items-baseline gap-3 flex-wrap">
                                 <h3 class="text-4xl font-black text-slate-900 leading-none">{{ item.client }}</h3>
-                                <span class="text-base font-bold text-gray-400 tracking-wider">SN {{ item.sn }}</span>
+                                <span class="text-base font-bold text-gray-400 tracking-wider">{{ item.sn }}</span>
                                 <span v-if="isLocked(item)" class="lock-badge" style="font-size:14px;padding:4px 12px"><i class="fa-solid fa-lock mr-1"></i>保證鎖定期</span>
                             </div>
                             <div class="text-lg font-bold text-gray-500 mt-3">業代：<span class="text-gray-700 font-black">{{ item.sales || '—' }}</span></div>
@@ -545,7 +545,7 @@
                         '</style></head><body>' +
                         '<section>' +
                         '<div class="hd"><div class="t">FCN 部位報告<small>FIXED COUPON NOTE · POSITION REVIEW</small></div>' +
-                        '<div class="meta"><b style="font-size:18px">' + (i.client || '') + '</b>　SN ' + (i.sn || '') + '<br>業代：<b>' + (i.sales || '-') + '</b>　交割幣別：<b>' + (i.currency || '-') + '</b>　庫存金額：<b>' + amtLabel + '</b><br>報價日期：<b>' + dstr + '</b></div></div>' +
+                        '<div class="meta"><b style="font-size:18px">' + (i.client || '') + '</b>　' + (i.sn || '') + '<br>業代：<b>' + (i.sales || '-') + '</b>　交割幣別：<b>' + (i.currency || '-') + '</b>　庫存金額：<b>' + amtLabel + '</b><br>報價日期：<b>' + dstr + '</b></div></div>' +
                         '<table class="cond"><thead><tr><th>下單日</th><th>天期(月)</th><th>觀察起日</th><th>到期日</th><th>出場價 KO</th><th>履約價 Strike</th><th>下限價 KI</th><th>票息(年化)</th><th>預估月息</th></tr></thead><tbody>' +
                         '<tr><td>' + (i.date || '-') + '</td><td>' + months + '</td><td>' + (i.koStart || '-') + '</td><td>' + (i.expiry || '-') + '</td><td class="hl">' + (i.koP || '-') + '%</td><td class="hl">' + (i.strikeP || '-') + '%</td><td class="hl">' + (i.kiP > 0 ? i.kiP + '%' : '無') + '</td><td class="hl">' + (i.coupon || '-') + '%</td><td class="hl">' + monthly + '</td></tr></tbody></table>' +
                         '<div class="dgrid">' + detailCols + '</div>' +
@@ -553,7 +553,7 @@
                         '</section>' +
                         '<section class="pb">' +
                         '<div class="hd"><div class="t" style="font-size:25px">標的走勢圖<small>UNDERLYING TREND · 近 6 個月每日收盤</small></div>' +
-                        '<div class="meta"><b style="font-size:16px">' + (i.client || '') + '</b>　SN ' + (i.sn || '') + '　報價日期：<b>' + dstr + '</b></div></div>' +
+                        '<div class="meta"><b style="font-size:16px">' + (i.client || '') + '</b>　' + (i.sn || '') + '　報價日期：<b>' + dstr + '</b></div></div>' +
                         legend + charts +
                         '<div class="ft">◎ 走勢為標的近 6 個月每日收盤價 ◎ 紅點為下單日、紫線為觀察起日 ◎ KO／Strike／KI 為換算後之價格水準</div>' +
                         '</section>' +
