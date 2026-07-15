@@ -921,6 +921,7 @@
                 formatNum(n) { return n ? Math.floor(n).toLocaleString() : '0'; },
                 formatPrice(n) { if (!n || n == 0) return '---'; return (Math.floor(parseFloat(n) * 100) / 100).toFixed(2); },
                 getStockName(c) { return stockNames[c] || c; },
+                cleanSales(v) { return v == null ? '' : String(v).replace(/^\s*\d+\s*[-–—]\s*/, '').trim(); },
                 repTokenOf(name) {
                     // 由名字產生固定、不可反推名字的英數 token（外人看不出對應誰）
                     const s = 'fcn-shield-2026|' + name;
@@ -1022,7 +1023,7 @@
                             date: this.toISO(g(r,'下單日')), expiry: this.toISO(g(r,'到期日')),
                             amount: (this.n(g(r,'庫存金額')) != null) ? this.n(g(r,'庫存金額')) / 10000 : null,
                             coupon: this.n(g(r,'配息年率(%)')), koP: this.n(g(r,'KO價(%)')), strikeP: this.n(g(r,'履約價(%)')), kiP: this.n(g(r,'KI價(%)')),
-                            tradeType: String(g(r,'交易方式') ?? '').trim(), sales: String(g(r,'營業員') ?? '').trim(),
+                            tradeType: String(g(r,'交易方式') ?? '').trim(), sales: this.cleanSales(g(r,'營業員')),
                             koStart: '', stocks: []
                         })).filter(it => it.client || it.sn);
                         if (!items.length) { alert('檔案裡沒有讀到資料，請確認表頭是否正確（姓名、商品編碼…）'); e.target.value = ''; return; }
@@ -1128,7 +1129,7 @@
                             return {
                                 branch: String(row.branch||'').trim(), branchCode: String(row.branchCode||'').trim(), account: String(row.account||'').trim(), idno: String(row.idno||'').trim(),
                                 client: String(row.client||'').trim(), sn: String(row.sn||'').trim(), isin: String(row.isin||'').trim(), currency: String(row.currency||'').trim() || 'USD',
-                                coupon: n(row.coupon), koP: n(row.koP), strikeP: n(row.strikeP), kiP: n(row.kiP), tradeType: String(row.tradeType||'').trim(), sales: String(row.sales||'').trim(),
+                                coupon: n(row.coupon), koP: n(row.koP), strikeP: n(row.strikeP), kiP: n(row.kiP), tradeType: String(row.tradeType||'').trim(), sales: this.cleanSales(row.sales),
                                 koStart: String(row.koStart||'').trim(), date: String(row.date||'').trim(), expiry: String(row.expiry||'').trim(), amount: n(row.amount), stocks
                             };
                         }).filter(it => it.client || it.sn);
@@ -1298,6 +1299,7 @@
                                         ...row,
                                         client: row.client ? String(row.client).trim() : '',
                                         sn: row.sn ? String(row.sn).trim() : '',
+                                        sales: this.cleanSales(row.sales),
                                         coupon: n(row.coupon), koP: n(row.koP), kiP: n(row.kiP), strikeP: n(row.strikeP), amount: n(row.amount),
                                         stocks: stocks
                                     };
