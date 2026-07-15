@@ -572,8 +572,8 @@
                     return '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>FCN 部位報告 - ' + (i.client || '') + '</title><style>' +
                         '@page{size:A4 landscape;margin:9mm}' +
                         '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-                        'body{font-family:system-ui,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;color:#13294b;margin:0;padding:4px 12px;background:#fff}' +
-                        'section{page-break-inside:avoid}.pb{page-break-before:always}' +
+                        'body{font-family:system-ui,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;color:#13294b;margin:0;padding:4px 14px 18px;background:#fff}' +
+                        'section{page-break-inside:avoid;padding-bottom:8px}.pb{page-break-before:always}' +
                         '.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0f2748;padding-bottom:9px}' +
                         '.hd .t{font-size:30px;font-weight:900;letter-spacing:2px;color:#0f2748}' +
                         '.hd .t small{display:block;font-size:11px;font-weight:700;letter-spacing:4px;color:#b8935a;margin-top:3px}' +
@@ -581,8 +581,8 @@
                         '.cond{width:100%;border-collapse:collapse;margin:14px 0 4px;font-size:13.5px}' +
                         '.cond th{background:#0f2748;color:#fff;font-weight:800;padding:8px 6px;border:1px solid #0f2748}' +
                         '.cond td{text-align:center;padding:9px 6px;border:1px solid #d9dee7;font-weight:800}.cond td.hl{color:#1d4ed8}' +
-                        '.stag{display:inline-block;background:#b8935a;color:#fff;font-size:11px;font-weight:800;padding:2px 10px;border-radius:6px;letter-spacing:1px}' +
-                        '.bdg{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;margin-left:6px}' +
+                        '.stag{display:inline-block;background:#b8935a;color:#fff;font-size:11px;font-weight:800;padding:3px 11px;border-radius:6px;letter-spacing:1px;line-height:1.5}' +
+                        '.bdg{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;margin-left:6px;line-height:1.5}' +
                         '.bdg.ko{background:#dc2626;color:#fff}.bdg.ki{background:#dc2626;color:#fff}.bdg.ok{background:#eef2f7;color:#94a3b8}' +
                         '.dgrid{display:flex;gap:18px;margin-top:18px}' +
                         '.dcol{flex:1;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;page-break-inside:avoid}' +
@@ -595,9 +595,9 @@
                         '.hit{margin-top:11px;border-radius:8px;padding:9px 12px;font-size:13.5px;font-weight:800;line-height:1.45}.hit.hko{background:#dbeafe;color:#1e3a8a}.hit.hki{background:#fee2e2;color:#991b1b}' +
                         '.legend{display:flex;gap:15px;font-size:11px;color:#64748b;font-weight:700;margin:6px 2px 2px;justify-content:flex-end;align-items:center}.legend i{display:inline-block;width:16px;height:0;border-top-width:3px;vertical-align:middle;margin-right:4px}' +
                         '.crow{margin-top:6px;page-break-inside:avoid}' +
-                        '.ctitle{font-size:14px;font-weight:800;color:#0f2748;margin-bottom:-2px}.ctitle b{color:#1d4ed8;font-size:18px;margin-left:6px}.ctitle .ccn{color:#64748b;font-weight:700;font-size:13px;margin-left:6px}' +
+                        '.ctitle{display:flex;align-items:center;flex-wrap:wrap;gap:2px;font-size:14px;font-weight:800;color:#0f2748;margin-bottom:2px}.ctitle b{color:#1d4ed8;font-size:18px;margin-left:6px}.ctitle .ccn{color:#64748b;font-weight:700;font-size:13px;margin-left:6px}' +
                         '.cbox{width:100%}' +
-                        '.ft{margin-top:12px;border-top:1px solid #e2e8f0;padding-top:8px;font-size:10.5px;color:#94a3b8;text-align:center;letter-spacing:.4px}' +
+                        '.ft{margin-top:12px;border-top:1px solid #e2e8f0;padding-top:8px;padding-bottom:2px;font-size:10px;line-height:1.7;color:#94a3b8;text-align:center;letter-spacing:.3px}' +
                         '</style></head><body>' +
                         '<section>' +
                         '<div class="hd"><div class="t">FCN 部位報告<small>FIXED COUPON NOTE · POSITION REVIEW</small></div>' +
@@ -634,9 +634,9 @@
                         const doc = frame.contentDocument;
                         doc.open(); doc.write(this.buildPrintHTML(this.item, true)); doc.close();
                         // 等待版面與 SVG 完成排版
-                        await new Promise(r => setTimeout(r, 700));
+                        await new Promise(r => setTimeout(r, 900));
                         const secs = doc.querySelectorAll('section');
-                        const opt = { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, windowWidth: 1123 };
+                        const opt = { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false };
                         const c1 = await html2canvas(secs[0], opt);
                         const c2 = await html2canvas(secs[1], opt);
                         this.img1 = c1.toDataURL('image/png');
