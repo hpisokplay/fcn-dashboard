@@ -65,11 +65,39 @@
             </div>
 
             <div v-if="repMode" class="space-y-4 fade-in">
-                <div class="fcn-card border-none shadow-xl bg-blue-600 text-white">
-                    <div class="text-sm font-bold opacity-80 uppercase tracking-widest">FCN 客戶部位</div>
-                    <div class="text-4xl font-black mt-1">業代 · {{ repName }}</div>
-                    <div class="text-base font-bold opacity-80 mt-3">共 {{ repClientCount }} 位客戶 · {{ repClientList.length }} 檔部位<span v-if="lastUpdated">　更新：{{ lastUpdated }}</span></div>
+                <div class="px-2 flex justify-between items-end flex-wrap gap-1">
+                    <h2 class="text-3xl font-black text-slate-800">業代 · {{ repName }}</h2>
+                    <div class="text-sm font-bold text-gray-400">共 {{ repClientCount }} 位客戶 · {{ repClientList.length }} 檔部位</div>
                 </div>
+
+                <div class="fcn-card shadow-xl text-white border-none bg-blue-600">
+                    <div class="flex justify-between items-start mb-3 text-white">
+                        <div>
+                            <div class="text-lg font-black tracking-wide">總部位 · 台幣計價</div>
+                            <div class="text-xs font-bold opacity-75 mt-1">美金＋日幣　即時匯率 {{ fxRateLabel }}<span v-if="!fx.ok" class="ml-1">（估算）</span></div>
+                        </div>
+                        <span class="text-sm font-black opacity-80 mt-1 whitespace-nowrap">{{ repCountUSD + repCountJPY }}筆</span>
+                    </div>
+                    <div class="text-5xl font-black italic font-mono tracking-tighter text-white">NT$ {{ formatNum(repTotalTWD) }} <span class="text-lg font-normal opacity-60 uppercase">萬</span></div>
+                </div>
+
+                <div class="fcn-card shadow-xl text-slate-900 border-none bg-amber-400">
+                    <div class="flex justify-between items-start mb-3 text-slate-900">
+                        <div class="text-lg font-black tracking-wide">美金部位 · 美金計價</div>
+                        <span class="text-sm font-black opacity-70 whitespace-nowrap">{{ repCountUSD }}筆</span>
+                    </div>
+                    <div class="text-5xl font-black italic font-mono tracking-tighter text-slate-900">$ {{ formatNum(repTotalUSD) }} <span class="text-lg font-normal opacity-60 uppercase">萬</span></div>
+                </div>
+
+                <div class="fcn-card shadow-xl text-slate-900 border-none bg-amber-400">
+                    <div class="flex justify-between items-start mb-3 text-slate-900">
+                        <div class="text-lg font-black tracking-wide">日幣部位 · 日幣計價</div>
+                        <span class="text-sm font-black opacity-70 whitespace-nowrap">{{ repCountJPY }}筆</span>
+                    </div>
+                    <div class="text-5xl font-black italic font-mono tracking-tighter text-slate-900">¥ {{ formatNum(repTotalJPY) }} <span class="text-lg font-normal opacity-60 uppercase">萬</span></div>
+                </div>
+
+                <h2 class="text-lg font-black px-2 pt-2 text-slate-500">客戶部位明細</h2>
                 <div v-if="repClientList.length === 0" class="text-center py-20 text-gray-300 font-bold italic uppercase text-xs tracking-widest">目前沒有您的客戶資料</div>
                 <client-card v-for="item in repClientList" :item="item" :key="item.sn + item.client"></client-card>
             </div>
@@ -790,7 +818,12 @@
                 },
                 repClientCount() {
                     return new Set(this.repClientList.map(i => i.client || '')).size;
-                }
+                },
+                repTotalUSD() { return this.repClientList.filter(i => i.currency === 'USD').reduce((a, i) => a + (i.amount || 0), 0); },
+                repTotalJPY() { return this.repClientList.filter(i => i.currency === 'JPY').reduce((a, i) => a + (i.amount || 0), 0); },
+                repCountUSD() { return this.repClientList.filter(i => i.currency === 'USD').length; },
+                repCountJPY() { return this.repClientList.filter(i => i.currency === 'JPY').length; },
+                repTotalTWD() { return this.fx.ok ? (this.repTotalUSD * this.fx.usdTwd + this.repTotalJPY * this.fx.jpyTwd) : 0; }
             },
             methods: {
                 parseDate(str) {
