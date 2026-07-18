@@ -275,14 +275,18 @@
 
         // 站內全螢幕列印預覽：把完整列印文件放進 iframe，並提供「列印」與「關閉」按鈕。
         // 取代 window.open —— 手機/PWA 全螢幕模式下 window.open 沒有工具列，會卡住無法返回。
+        // 關鍵：列印文件是為 ~980px 寬版面設計的（原本 window.open 在手機是以 980px 後備寬度
+        // 縮放顯示）。iframe 預設會用裝置寬度（~390px）排版，導致橫式版面被切掉。
+        // 因此這裡強制 iframe 以 980px 排版，再用 transform:scale 縮放到螢幕寬度，完整重現原本畫面。
         function showPrintOverlay(htmlDoc) {
+            const RW = 980; // 列印文件設計寬度
             const ov = document.createElement('div');
-            ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.96);display:flex;flex-direction:column';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:#334155;display:flex;flex-direction:column';
             const bar = document.createElement('div');
             bar.style.cssText = 'flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0f2748;padding:calc(12px + env(safe-area-inset-top)) 14px 12px 16px';
             const title = document.createElement('div');
             title.style.cssText = 'color:#fff;font-weight:800;font-size:15px;line-height:1.3';
-            title.innerHTML = '列印預覽<span style="display:block;color:#cbd5e1;font-weight:600;font-size:12px;margin-top:2px">按「列印」出圖，或「關閉」返回</span>';
+            title.innerHTML = '列印預覽<span style="display:block;color:#cbd5e1;font-weight:600;font-size:12px;margin-top:2px">按「列印」出圖，或右上「✕」返回</span>';
             const btns = document.createElement('div');
             btns.style.cssText = 'flex:0 0 auto;display:flex;gap:8px';
             const printBtn = document.createElement('button');
@@ -291,23 +295,49 @@
             printBtn.innerHTML = '<i class="fa-solid fa-print"></i> 列印';
             const closeBtn = document.createElement('button');
             closeBtn.type = 'button';
-            closeBtn.setAttribute('aria-label', '關閉');
+            closeBtn.setAttribute('aria-label', '返回');
             closeBtn.style.cssText = 'border:0;border-radius:12px;background:rgba(255,255,255,.16);color:#fff;font-size:20px;width:44px;height:44px';
             closeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            // 捲動區 + 縮放舞台 + iframe
+            const scroller = document.createElement('div');
+            scroller.style.cssText = 'flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch';
+            const stage = document.createElement('div');
+            stage.style.cssText = 'transform-origin:0 0;background:#fff';
             const frame = document.createElement('iframe');
             frame.setAttribute('title', '列印預覽');
-            frame.style.cssText = 'flex:1 1 auto;width:100%;border:0;background:#fff';
+            frame.style.cssText = 'width:' + RW + 'px;border:0;background:#fff;display:block';
+            stage.appendChild(frame);
+            scroller.appendChild(stage);
             btns.appendChild(printBtn); btns.appendChild(closeBtn);
             bar.appendChild(title); bar.appendChild(btns);
-            ov.appendChild(bar); ov.appendChild(frame);
+            ov.appendChild(bar); ov.appendChild(scroller);
             document.body.appendChild(ov);
             const prevOverflow = document.body.style.overflow;
             document.body.style.overflow = 'hidden';
             const doc = frame.contentDocument || frame.contentWindow.document;
             doc.open(); doc.write(htmlDoc); doc.close();
-            const close = () => { ov.remove(); document.body.style.overflow = prevOverflow; document.removeEventListener('keydown', onKey); };
+            // 以 980px 排版，縮放到捲動區寬度；用負邊距讓縮放後的實際佔位正確（transform 不改變版面盒尺寸）
+            function fit() {
+                const availW = scroller.clientWidth || RW;
+                const scale = availW / RW;
+                let h = 0;
+                try { const b = frame.contentDocument; h = Math.max(b.body ? b.body.scrollHeight : 0, b.documentElement ? b.documentElement.scrollHeight : 0); } catch (e) {}
+                if (!h) h = 1600;
+                frame.style.height = h + 'px';
+                stage.style.width = RW + 'px';
+                stage.style.height = h + 'px';
+                stage.style.transform = 'scale(' + scale + ')';
+                stage.style.marginRight = (availW - RW) + 'px';       // 收合水平多餘佔位 → 不會橫向捲動
+                stage.style.marginBottom = (h * scale - h) + 'px';    // 收合垂直多餘佔位 → 捲動長度正確
+            }
+            fit();
+            frame.addEventListener('load', function () { setTimeout(fit, 30); });
+            setTimeout(fit, 250);
+            setTimeout(fit, 800);
+            const close = () => { ov.remove(); document.body.style.overflow = prevOverflow; document.removeEventListener('keydown', onKey); window.removeEventListener('resize', fit); };
             const onKey = (e) => { if (e.key === 'Escape') close(); };
             document.addEventListener('keydown', onKey);
+            window.addEventListener('resize', fit);
             closeBtn.addEventListener('click', close);
             printBtn.addEventListener('click', () => {
                 try { frame.contentWindow.focus(); frame.contentWindow.print(); }
