@@ -272,6 +272,49 @@
 
     <script>
         const { createApp } = Vue
+
+        // 站內全螢幕列印預覽：把完整列印文件放進 iframe，並提供「列印」與「關閉」按鈕。
+        // 取代 window.open —— 手機/PWA 全螢幕模式下 window.open 沒有工具列，會卡住無法返回。
+        function showPrintOverlay(htmlDoc) {
+            const ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.96);display:flex;flex-direction:column';
+            const bar = document.createElement('div');
+            bar.style.cssText = 'flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0f2748;padding:calc(12px + env(safe-area-inset-top)) 14px 12px 16px';
+            const title = document.createElement('div');
+            title.style.cssText = 'color:#fff;font-weight:800;font-size:15px;line-height:1.3';
+            title.innerHTML = '列印預覽<span style="display:block;color:#cbd5e1;font-weight:600;font-size:12px;margin-top:2px">按「列印」出圖，或「關閉」返回</span>';
+            const btns = document.createElement('div');
+            btns.style.cssText = 'flex:0 0 auto;display:flex;gap:8px';
+            const printBtn = document.createElement('button');
+            printBtn.type = 'button';
+            printBtn.style.cssText = 'border:0;border-radius:12px;background:#fff;color:#0f2748;font-weight:900;font-size:15px;padding:0 18px;height:44px;white-space:nowrap';
+            printBtn.innerHTML = '<i class="fa-solid fa-print"></i> 列印';
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.setAttribute('aria-label', '關閉');
+            closeBtn.style.cssText = 'border:0;border-radius:12px;background:rgba(255,255,255,.16);color:#fff;font-size:20px;width:44px;height:44px';
+            closeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            const frame = document.createElement('iframe');
+            frame.setAttribute('title', '列印預覽');
+            frame.style.cssText = 'flex:1 1 auto;width:100%;border:0;background:#fff';
+            btns.appendChild(printBtn); btns.appendChild(closeBtn);
+            bar.appendChild(title); bar.appendChild(btns);
+            ov.appendChild(bar); ov.appendChild(frame);
+            document.body.appendChild(ov);
+            const prevOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            const doc = frame.contentDocument || frame.contentWindow.document;
+            doc.open(); doc.write(htmlDoc); doc.close();
+            const close = () => { ov.remove(); document.body.style.overflow = prevOverflow; document.removeEventListener('keydown', onKey); };
+            const onKey = (e) => { if (e.key === 'Escape') close(); };
+            document.addEventListener('keydown', onKey);
+            closeBtn.addEventListener('click', close);
+            printBtn.addEventListener('click', () => {
+                try { frame.contentWindow.focus(); frame.contentWindow.print(); }
+                catch (e) { try { window.print(); } catch (_) {} }
+            });
+        }
+
         const stockNames = {'6146.T':'Disco','6501.T':'日立','7011.T':'三菱重工','6857.T':'愛德萬','7012.T':'川崎重工','7013.T':'IHI重工','7974.T':'任天堂','8035.T':'東京威力','5803.T':'藤倉電子','8697.T':'日本交易所','8002.T':'丸紅','NVDA':'輝達','TSLA':'特斯拉','TSM':'台積電','AMD':'超微','MU':'美光','ARM':'安謀','GOOG':'谷歌','AMZN':'亞馬遜','AVGO':'博通','MSFT':'微軟','META':'臉書','DELL':'戴爾','ORCL':'甲骨文','OKLO':'Oklo','PLTR':'帕蘭提爾','NFLX':'網飛','BRK.B':'波克夏'};
 
         const ClientCard = {
@@ -633,9 +676,7 @@
                         '</body></html>';
                 },
                 printCard() {
-                    const w = window.open('', '_blank');
-                    if (!w) { alert('請允許彈出視窗，才能開啟列印報告'); return; }
-                    w.document.open(); w.document.write(this.buildPrintHTML(this.item)); w.document.close();
+                    showPrintOverlay(this.buildPrintHTML(this.item, true));
                 },
                 async generateImages() {
                     if (typeof html2canvas === 'undefined') { alert('圖片元件尚未載入完成，請稍候再試'); return; }
@@ -1021,10 +1062,8 @@
                         'tr.alt td{background:#f7f9fc}tr.grp td{border-bottom:2px solid #cbd5e1}tr{page-break-inside:avoid}' +
                         '.ft{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:8px;font-size:10.5px;color:#94a3b8;text-align:center;letter-spacing:.4px}' +
                         '</style></head><body>' + bodyHTML +
-                        '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},400)}<\/scr' + 'ipt></body></html>';
-                    const w = window.open('', '_blank');
-                    if (!w) { alert('請允許彈出視窗，才能開啟報表'); return; }
-                    w.document.open(); w.document.write(html); w.document.close();
+                        '</body></html>';
+                    showPrintOverlay(html);
                 },
                 formatNum(n) { return n ? Math.floor(n).toLocaleString() : '0'; },
                 formatPrice(n) { if (!n || n == 0) return '---'; return (Math.floor(parseFloat(n) * 100) / 100).toFixed(2); },
