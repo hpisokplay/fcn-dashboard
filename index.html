@@ -183,20 +183,34 @@
                 <client-card v-for="item in clientViewList" :item="item" :key="item.sn + item.client"></client-card>
             </div>
             <div v-if="view === 'sales'" class="space-y-4 fade-in text-slate-800 text-left">
-                <div class="fcn-card border border-gray-100 shadow-sm">
-                    <h2 class="text-2xl font-black mb-1"><i class="fa-solid fa-link text-blue-600 mr-2"></i>業務專屬連結</h2>
-                    <p class="text-base text-gray-500 font-bold mb-4">把連結傳給各業務，他們點開後只會看到「自己的客戶」，且資料會即時更新（不會看到別人的客戶）。</p>
-                    <div class="space-y-2">
-                        <div v-for="s in salesSummary" :key="s.name" class="flex justify-between items-center gap-3 bg-gray-50 rounded-2xl px-5 py-3">
-                            <div class="font-black text-slate-800 text-lg min-w-0">{{ s.name }} <span class="text-gray-400 font-bold text-sm">· {{ s.count }} 檔</span></div>
-                            <button @click="copyRepLink(s.name)" class="bg-blue-600 text-white font-black rounded-xl px-5 py-2.5 text-sm whitespace-nowrap flex-shrink-0"><i class="fa-solid fa-copy mr-1"></i>複製連結</button>
+                <!-- 業務列表 -->
+                <template v-if="!previewSales">
+                    <div class="fcn-card border border-gray-100 shadow-sm">
+                        <h2 class="text-2xl font-black mb-1"><i class="fa-solid fa-link text-blue-600 mr-2"></i>業務專屬連結</h2>
+                        <p class="text-base text-gray-500 font-bold mb-4">把連結傳給各業務，他們點開後只會看到「自己的客戶」，且資料會即時更新（不會看到別人的客戶）。<span class="text-blue-600">點業務姓名即可直接檢視他的客戶。</span></p>
+                        <div class="space-y-2">
+                            <div v-for="s in salesSummary" :key="s.name" class="flex justify-between items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3">
+                                <button @click="openRep(s.name)" class="flex items-center gap-2 min-w-0 flex-1 text-left active:opacity-60">
+                                    <span class="font-black text-slate-800 text-lg truncate">{{ s.name }}</span>
+                                    <span class="text-gray-400 font-bold text-sm flex-shrink-0">· {{ s.count }} 檔</span>
+                                    <i class="fa-solid fa-chevron-right text-gray-300 text-xs flex-shrink-0"></i>
+                                </button>
+                                <button @click="copyRepLink(s.name)" class="bg-blue-600 text-white font-black rounded-xl px-5 py-2.5 text-sm whitespace-nowrap flex-shrink-0"><i class="fa-solid fa-copy mr-1"></i>複製連結</button>
+                            </div>
+                            <div v-if="salesSummary.length === 0" class="text-center text-gray-300 py-6 font-bold italic text-xs uppercase">尚無業務資料</div>
                         </div>
-                        <div v-if="salesSummary.length === 0" class="text-center text-gray-300 py-6 font-bold italic text-xs uppercase">尚無業務資料</div>
                     </div>
-                </div>
-                <h2 class="text-lg font-black px-2 text-slate-500">預覽業務客戶</h2>
-                <select v-model="selectedSales" class="w-full p-4 rounded-3xl bg-white shadow-sm font-black text-blue-600 outline-none text-lg text-slate-800 font-mono"><option v-for="s in salesSummary" :value="s.name">{{ s.name }} ({{ s.count }} 筆)</option></select>
-                <client-card v-for="item in salesFilteredList" :item="item" :key="item.sn + item.client"></client-card>
+                </template>
+                <!-- 檢視單一業務的客戶 -->
+                <template v-else>
+                    <button @click="backToReps" class="font-black text-slate-500 text-base whitespace-nowrap"><i class="fa-solid fa-chevron-left mr-1"></i>返回業務列表</button>
+                    <div class="flex items-baseline justify-between px-1">
+                        <h2 class="text-3xl font-black text-slate-800">業代 · {{ previewSales }}</h2>
+                        <div class="text-sm font-bold text-gray-400">{{ previewClientCount }} 位客戶 · {{ previewList.length }} 檔</div>
+                    </div>
+                    <div v-if="previewList.length === 0" class="text-center py-20 text-gray-300 font-bold italic uppercase text-xs tracking-widest">此業務目前沒有客戶資料</div>
+                    <client-card v-for="item in previewList" :item="item" :key="item.sn + item.client"></client-card>
+                </template>
             </div>
 
             <div v-if="view === 'entry'" class="space-y-4 fade-in text-slate-800 text-left">
@@ -814,7 +828,7 @@
                     editExtra: {},
                     githubToken: localStorage.getItem('fcn_token') || '',
                     selectedFile: null, fileName: '', isUploading: false,
-                    inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達', selectedClient: '',
+                    inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達', selectedClient: '', previewSales: '',
                     repMode: false, repToken: '',
                     lastUpdated: '', autoUpdatedAt: '',
                     fx: { usdTwd: 0, jpyTwd: 0, ok: false, at: '' }
@@ -939,6 +953,8 @@
                     return !s ? this.inventory : this.inventory.filter(i => (i.client && i.client.includes(s)) || (i.sn && i.sn.toLowerCase().includes(s)));
                 },
                 salesFilteredList() { return this.inventory.filter(i => i.sales === this.selectedSales); },
+                previewList() { return this.previewSales ? this.inventory.filter(i => (i.sales || '') === this.previewSales) : []; },
+                previewClientCount() { return new Set(this.previewList.map(i => i.client || '')).size; },
                 clientGroups() {
                     const map = {};
                     this.clientFilteredList.forEach(i => { const k = i.client || '(未命名)'; (map[k] = map[k] || []).push(i); });
@@ -968,6 +984,9 @@
                 repCountUSD() { return this.repClientList.filter(i => i.currency === 'USD').length; },
                 repCountJPY() { return this.repClientList.filter(i => i.currency === 'JPY').length; },
                 repTotalTWD() { return this.fx.ok ? (this.repTotalUSD * this.fx.usdTwd + this.repTotalJPY * this.fx.jpyTwd) : 0; }
+            },
+            watch: {
+                view() { this.previewSales = ''; }
             },
             methods: {
                 parseDate(str) {
@@ -1111,6 +1130,8 @@
                     return (h1.toString(36) + h2.toString(36)).slice(0, 10);
                 },
                 repLink(name) { return location.origin + location.pathname + '?rep=' + this.repTokenOf(name); },
+                openRep(name) { this.previewSales = name; this.$nextTick(() => window.scrollTo(0, 0)); },
+                backToReps() { this.previewSales = ''; this.$nextTick(() => window.scrollTo(0, 0)); },
                 copyRepLink(name) {
                     const url = this.repLink(name);
                     if (navigator.clipboard && navigator.clipboard.writeText) {
