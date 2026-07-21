@@ -5,7 +5,7 @@
  *  - 第三方靜態程式庫 (Vue / Tailwind / FontAwesome…):快取優先(版本固定,可離線)。
  *  - 其他(股價代理 / Yahoo 等即時資料):不攔截,一律走網路,永不快取。
  */
-const CACHE = 'fcn-dash-v1';
+const CACHE = 'fcn-dash-v2';
 const CORE = [
   './',
   './index.html',

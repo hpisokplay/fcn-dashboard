@@ -6,13 +6,28 @@
     <title>上新莊分行 - FCN 管理系統 v58.FinalLogic</title>
     <!-- PWA -->
     <meta name="theme-color" content="#0f2748">
-    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" href="icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FCN監控">
+    <!-- 業務連結(?rep)一律「不掛 manifest」：讓 iOS/Android「加入主畫面」改用『當下網址(含 ?rep)』當啟動網址， -->
+    <!-- 避免 manifest 的 start_url(./)把業務身分丟掉。此判斷在 head 解析階段就完成，比等網頁載入更早、更可靠。 -->
+    <!-- 管理者(無 ?rep)才掛 manifest，維持正常 PWA 安裝。 -->
+    <script>
+      (function () {
+        if (/[?&]rep=/.test(location.search)) {
+          var mt = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+          if (mt) mt.setAttribute('content', 'FCN 部位');
+        } else {
+          var l = document.createElement('link');
+          l.rel = 'manifest';
+          l.href = 'manifest.json';
+          document.head.appendChild(l);
+        }
+      })();
+    </script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
