@@ -1161,25 +1161,14 @@
                 },
                 login() { if (this.inputPass === this.password) { this.isLoggedIn = true; sessionStorage.setItem('fcn_auth', 'true'); try { localStorage.setItem('fcn_mgr_ok', '1'); } catch (e) {} } },
                 installRepManifest(rep) {
-                    // 動態產生「本人專屬」的 manifest（start_url 帶 ?rep），避免 iOS/Android 加到主畫面後
-                    // 用靜態 manifest 的 start_url（./）把業務參數丟掉。相對路徑在 blob manifest 會失效，故用絕對網址。
+                    // 業務頁「移除 manifest」。原因：iOS(Safari)對動態/blob manifest 支援不佳，加入主畫面時
+                    // 會改用靜態 manifest 的 start_url（./）而把 ?rep 丟掉 → 桌面 App 打開變成無身分（看到鎖定/總表）。
+                    // 移除 manifest 後，iOS/Android 的「加入主畫面」會改用「目前網址（含 ?rep）」當啟動網址，
+                    // 全螢幕仍由 apple-mobile-web-app-capable meta 提供。這是最可靠、不依賴 manifest 支援度的做法。
                     try {
-                        const dir = location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '');
-                        const m = {
-                            name: 'FCN 部位', short_name: 'FCN部位', lang: 'zh-Hant',
-                            display: 'standalone', background_color: '#0c1f3c', theme_color: '#0f2748',
-                            scope: dir, start_url: dir + '?rep=' + encodeURIComponent(rep),
-                            icons: [
-                                { src: dir + 'icon-192.png', sizes: '192x192', type: 'image/png' },
-                                { src: dir + 'icon-512.png', sizes: '512x512', type: 'image/png' },
-                                { src: dir + 'apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
-                            ]
-                        };
-                        const blob = new Blob([JSON.stringify(m)], { type: 'application/manifest+json' });
-                        const url = URL.createObjectURL(blob);
-                        let link = document.querySelector('link[rel="manifest"]');
-                        if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
-                        link.setAttribute('href', url);
+                        document.querySelectorAll('link[rel="manifest"]').forEach(function (l) {
+                            if (l.parentNode) l.parentNode.removeChild(l);
+                        });
                     } catch (e) {}
                 },
                 checkAdminPass() { if (this.adminPassInput === this.adminPass) { this.view = 'admin_panel'; } else { alert('ERR'); } },
