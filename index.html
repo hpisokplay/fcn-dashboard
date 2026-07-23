@@ -127,6 +127,8 @@
                     <div class="text-sm font-bold text-gray-400">共 {{ repClientCount }} 位客戶 · {{ repClientList.length }} 檔部位</div>
                 </div>
 
+                <button v-if="repClientList.length" @click="exportRepReport(repName)" class="w-full bg-emerald-600 text-white font-black rounded-2xl px-6 py-4 text-base shadow-sm flex items-center justify-center gap-2"><i class="fa-solid fa-table-list"></i>匯出我的客戶總表</button>
+
                 <div class="fcn-card shadow-xl text-white border-none bg-blue-600">
                     <div class="flex justify-between items-start mb-3 text-white">
                         <div>
@@ -239,6 +241,7 @@
                         <h2 class="text-3xl font-black text-slate-800">業代 · {{ previewSales }}</h2>
                         <div class="text-sm font-bold text-gray-400">{{ previewClientCount }} 位客戶 · {{ previewList.length }} 檔</div>
                     </div>
+                    <button v-if="previewList.length" @click="exportRepReport(previewSales)" class="w-full bg-emerald-600 text-white font-black rounded-2xl px-6 py-4 text-base shadow-sm flex items-center justify-center gap-2"><i class="fa-solid fa-table-list"></i>匯出「{{ previewSales }}」客戶總表</button>
                     <div v-if="previewList.length === 0" class="text-center py-20 text-gray-300 font-bold italic uppercase text-xs tracking-widest">此業務目前沒有客戶資料</div>
                     <client-card v-for="item in previewList" :item="item" :key="item.sn + item.client"></client-card>
                 </template>
@@ -1079,8 +1082,16 @@
                     const secs = names.map((n, idx) => '<section' + (idx ? ' style="page-break-before:always"' : '') + '>' + this._clientSection(n) + '</section>').join('');
                     this._openReport(secs, '客戶庫存總表 - 全部客戶（' + names.length + ' 位）');
                 },
-                _clientSection(name) {
-                    const items = this.inventory.filter(i => (i.client || '(未命名)') === name);
+                exportRepReport(salesName) {
+                    // 匯出「單一業代」名下所有客戶的總表；salesFilter 確保只含該業代的部位（嚴格隔離）
+                    if (!salesName) { alert('查無業代'); return; }
+                    const names = [...new Set(this.inventory.filter(i => (i.sales || '') === salesName).map(i => i.client || '(未命名)'))];
+                    if (!names.length) { alert('此業代目前沒有客戶資料'); return; }
+                    const secs = names.map((n, idx) => '<section' + (idx ? ' style="page-break-before:always"' : '') + '>' + this._clientSection(n, salesName) + '</section>').join('');
+                    this._openReport(secs, '業代客戶總表 - ' + salesName + '（' + names.length + ' 位客戶）');
+                },
+                _clientSection(name, salesFilter) {
+                    const items = this.inventory.filter(i => (i.client || '(未命名)') === name && (!salesFilter || (i.sales || '') === salesFilter));
                     if (!items.length) return '';
                     const now = new Date();
                     const dstr = now.getFullYear() + '/' + (now.getMonth() + 1) + '/' + now.getDate();
