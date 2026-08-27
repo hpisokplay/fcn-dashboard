@@ -22,10 +22,19 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; fcn-dashboard/1.0; personal r
 
 # 基礎清單（與網頁 stockNames 一致）；實際會再併入 data.csv 裡出現的代號
 BASE_SYMBOLS = [
+    # 日股
     "6146.T", "6501.T", "7011.T", "6857.T", "7012.T", "7013.T", "7974.T",
-    "8035.T", "5803.T", "8697.T", "8002.T",
-    "NVDA", "TSLA", "TSM", "AMD", "MU", "ARM", "GOOG", "AMZN", "AVGO",
-    "MSFT", "META", "DELL", "ORCL", "OKLO", "PLTR", "NFLX", "BRK.B",
+    "8035.T", "5803.T", "8697.T", "8002.T", "285A.T", "4063.T", "6758.T",
+    "9984.T", "9501.T", "6920.T", "6954.T", "6981.T", "8306.T", "7203.T",
+    # 美股：大型科技 / AI
+    "NVDA", "TSLA", "TSM", "AMD", "MU", "ARM", "GOOG", "GOOGL", "AMZN",
+    "AVGO", "MSFT", "META", "DELL", "ORCL", "OKLO", "PLTR", "NFLX",
+    "BRK.B", "AAPL", "UBER", "COIN", "MSTR", "CRWD", "ANET", "VST", "CEG",
+    # 美股：半導體設備 / 供應鏈
+    "AMAT", "LRCX", "KLAC", "ASML", "INTC", "QCOM", "MRVL", "SMCI",
+    "GLW", "LITE", "SNDK",
+    # ETF
+    "QQQ", "SPY", "SOXX",
 ]
 
 
