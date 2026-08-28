@@ -344,92 +344,54 @@ button:disabled {
 
 
 /* =====================================================
-   Summary
+   報價列
 ===================================================== */
 
-.summary {
+/* =====================================================
+   欄寬（表頭與資料列共用，務必一致）
+===================================================== */
 
-    display: grid;
+:root {
 
-    grid-template-columns:
-        repeat(4, 1fr);
+    --cols:
+        130px
+        88px
+        85px
+        185px
+        135px
+        170px
+        135px
+        minmax(400px, 1fr);
 
-    gap: 14px;
-
-    margin-bottom: 25px;
-}
-
-
-.summary-card {
-
-    padding: 16px 20px;
-
-    border-radius: 14px;
-
-    background:
-        rgba(255,255,255,.08);
-
-    border:
-        1px solid
-        rgba(255,255,255,.13);
-}
-
-
-.summary-card span {
-
-    display: block;
-
-    color: #bdd0df;
-
-    font-size: 13px;
-
-    margin-bottom: 6px;
-}
-
-
-.summary-card strong {
-
-    color: #f3cd62;
-
-    font-size: 25px;
-
-    font-weight: 900;
+    --colgap: 14px;
 }
 
 
 /* =====================================================
-   表頭列（欄位標題）
+   表頭列
 ===================================================== */
 
 .quote-head {
 
     display: none;
 
-    grid-template-columns:
-        150px
-        75px
-        80px
-        145px
-        125px
-        152px
-        128px
-        minmax(240px, 1fr);
+    grid-template-columns: var(--cols);
 
-    column-gap: 18px;
+    column-gap: var(--colgap);
 
     align-items: center;
 
     padding:
-        14px 21px 14px 28px;
+        15px 21px 15px 28px;
 
     margin-bottom: 12px;
 
     background:
-        rgba(255,255,255,.10);
+        rgba(255,255,255,.12);
 
     border:
         1px solid
-        rgba(255,255,255,.20);
+        rgba(255,255,255,.22);
 
     border-radius: 14px;
 }
@@ -443,13 +405,15 @@ button:disabled {
 
 .quote-head div {
 
-    color: #f3cd62;
+    color: #f7d97a;
 
-    font-size: 22px;
+    font-size: 27px;
 
     font-weight: 900;
 
     letter-spacing: 1px;
+
+    text-align: center;
 
     white-space: nowrap;
 }
@@ -463,7 +427,7 @@ button:disabled {
 
     display: grid;
 
-    gap: 14px;
+    gap: 12px;
 }
 
 
@@ -471,27 +435,19 @@ button:disabled {
 
     display: grid;
 
-    grid-template-columns:
-        150px
-        75px
-        80px
-        145px
-        125px
-        152px
-        128px
-        minmax(240px, 1fr);
+    grid-template-columns: var(--cols);
 
-    column-gap: 18px;
+    column-gap: var(--colgap);
 
     align-items: center;
 
     padding:
-        19px 22px;
+        16px 22px;
 
     background:
         rgba(255,255,255,.97);
 
-    border-radius: 18px;
+    border-radius: 16px;
 
     border-left:
         7px solid #e0b64f;
@@ -505,20 +461,8 @@ button:disabled {
 .cell {
 
     min-width: 0;
-}
 
-
-.label {
-
-    margin-bottom: 5px;
-
-    color: #8493a2;
-
-    font-size: 12px;
-
-    font-weight: 700;
-
-    white-space: nowrap;
+    text-align: center;
 }
 
 
@@ -531,6 +475,8 @@ button:disabled {
     white-space: nowrap;
 
     line-height: 1.15;
+
+    text-align: center;
 }
 
 
@@ -540,7 +486,7 @@ button:disabled {
 
 .issuer-value {
 
-    font-size: 27px;
+    font-size: 32px;
 
     color: #174f82;
 
@@ -556,7 +502,7 @@ button:disabled {
 
 .currency-value {
 
-    font-size: 24px;
+    font-size: 28px;
 }
 
 
@@ -566,7 +512,7 @@ button:disabled {
 
 .tenor-value {
 
-    font-size: 25px;
+    font-size: 28px;
 }
 
 
@@ -578,7 +524,7 @@ button:disabled {
 
     color: #d99b00;
 
-    font-size: 31px;
+    font-size: 34px;
 
     font-weight: 900;
 }
@@ -592,7 +538,7 @@ button:disabled {
 
     color: #008273;
 
-    font-size: 28px;
+    font-size: 31px;
 
     font-weight: 900;
 }
@@ -606,7 +552,7 @@ button:disabled {
 
     color: #a45722;
 
-    font-size: 27px;
+    font-size: 30px;
 
     font-weight: 900;
 }
@@ -620,13 +566,15 @@ button:disabled {
 
     align-items: center;
 
+    justify-content: center;
+
     gap: 7px;
 
     flex-wrap: nowrap;
 }
 
 
-/* AKI / EKI */
+/* AKI（維持原本配色） */
 
 .ki-freq {
 
@@ -636,7 +584,7 @@ button:disabled {
 
     justify-content: center;
 
-    padding: 3px 7px;
+    padding: 4px 8px;
 
     border-radius: 6px;
 
@@ -644,13 +592,23 @@ button:disabled {
 
     color: #8c4a20;
 
-    font-size: 11px;
+    font-size: 15px;
 
     font-weight: 900;
 
     letter-spacing: .5px;
+}
 
-    margin-top: 0;
+
+/* EKI（黃底標示） */
+
+.ki-freq.eki {
+
+    background: #ffd84a;
+
+    color: #6b4a00;
+
+    border: 1px solid #e0b400;
 }
 
 
@@ -662,14 +620,14 @@ button:disabled {
 
     color: #1671b3;
 
-    font-size: 27px;
+    font-size: 30px;
 
     font-weight: 900;
 }
 
 
 /* =====================================================
-   股票
+   股票（不換行）
 ===================================================== */
 
 .stocks {
@@ -678,9 +636,11 @@ button:disabled {
 
     align-items: center;
 
-    flex-wrap: wrap;
+    justify-content: center;
 
-    gap: 7px;
+    flex-wrap: nowrap;
+
+    gap: 6px;
 }
 
 
@@ -692,10 +652,12 @@ button:disabled {
 
     justify-content: center;
 
-    min-width: 78px;
+    flex: 0 1 auto;
+
+    min-width: 0;
 
     padding:
-        10px 15px;
+        9px 10px;
 
     background: #e8f1f8;
 
@@ -706,34 +668,11 @@ button:disabled {
 
     color: #143f63;
 
-    font-size: 24px;
+    font-size: 22px;
 
     font-weight: 900;
-}
 
-
-/* =====================================================
-   BEST
-===================================================== */
-
-.solve-tag {
-
-    display: inline-block;
-
-    margin-top: 5px;
-
-    padding:
-        2px 7px;
-
-    border-radius: 5px;
-
-    background: #fff0c9;
-
-    color: #9f7009;
-
-    font-size: 9px;
-
-    font-weight: 900;
+    white-space: nowrap;
 }
 
 
@@ -968,69 +907,28 @@ button:disabled {
     }
 
 
-    .summary {
-
-        grid-template-columns:
-            repeat(4, 1fr) !important;
-
-        gap:
-            1.5mm !important;
-
-        margin-bottom:
-            2.5mm !important;
-    }
-
-
-    .summary-card {
-
-        min-width:
-            0 !important;
-
-        padding:
-            1.5mm 2mm !important;
-
-        border-radius:
-            2mm !important;
-    }
-
-
-    .summary-card span {
-
-        font-size:
-            5.5pt !important;
-
-        margin-bottom:
-            .5mm !important;
-    }
-
-
-    .summary-card strong {
-
-        font-size:
-            9.5pt !important;
-    }
-
+    /* ---- A4 直式：15 組一頁 ---- */
 
     .quote-head {
 
         grid-template-columns:
-            22mm
+            19mm
             11mm
-            12mm
-            22mm
+            10mm
+            25mm
             18mm
-            20mm
+            24mm
             18mm
             1fr !important;
 
         column-gap:
-            1mm !important;
+            1.5mm !important;
 
         padding:
-            1.2mm 2mm 1.2mm 3mm !important;
+            1.6mm 2mm 1.6mm 3mm !important;
 
         margin-bottom:
-            1.3mm !important;
+            1.5mm !important;
 
         border-radius:
             2mm !important;
@@ -1040,7 +938,7 @@ button:disabled {
     .quote-head div {
 
         font-size:
-            7.5pt !important;
+            11pt !important;
 
         letter-spacing:
             0 !important;
@@ -1050,33 +948,33 @@ button:disabled {
     .quote-list {
 
         gap:
-            1.3mm !important;
+            2mm !important;
     }
 
 
     .quote-row {
 
         grid-template-columns:
-            22mm
+            19mm
             11mm
-            12mm
-            22mm
+            10mm
+            25mm
             18mm
-            20mm
+            24mm
             18mm
             1fr !important;
 
         column-gap:
-            1mm !important;
+            1.5mm !important;
 
         padding:
-            1.5mm 2mm !important;
+            2.6mm 2mm !important;
 
         border-radius:
             2mm !important;
 
         border-left-width:
-            1mm !important;
+            1.2mm !important;
 
         box-shadow:
             none !important;
@@ -1086,16 +984,6 @@ button:disabled {
 
         page-break-inside:
             avoid !important;
-    }
-
-
-    .label {
-
-        font-size:
-            5.2pt !important;
-
-        margin-bottom:
-            .4mm !important;
     }
 
 
@@ -1109,42 +997,42 @@ button:disabled {
     .issuer-value {
 
         font-size:
-            9.5pt !important;
+            15pt !important;
     }
 
 
     .currency-value {
 
         font-size:
-            8.5pt !important;
+            13pt !important;
     }
 
 
     .tenor-value {
 
         font-size:
-            8.5pt !important;
+            13pt !important;
     }
 
 
     .coupon-value {
 
         font-size:
-            11pt !important;
+            16.5pt !important;
     }
 
 
     .strike-value {
 
         font-size:
-            10pt !important;
+            14.5pt !important;
     }
 
 
     .ki-value {
 
         font-size:
-            9.5pt !important;
+            14pt !important;
     }
 
 
@@ -1154,6 +1042,9 @@ button:disabled {
             flex !important;
 
         align-items:
+            center !important;
+
+        justify-content:
             center !important;
 
         gap:
@@ -1166,24 +1057,21 @@ button:disabled {
 
     .ki-freq {
 
-        margin-top:
-            0 !important;
-
         padding:
-            .2mm .8mm !important;
+            .4mm 1.1mm !important;
 
         border-radius:
             1mm !important;
 
         font-size:
-            4.8pt !important;
+            8pt !important;
     }
 
 
     .ko-value {
 
         font-size:
-            9.5pt !important;
+            14pt !important;
     }
 
 
@@ -1191,6 +1079,9 @@ button:disabled {
 
         gap:
             .8mm !important;
+
+        flex-wrap:
+            nowrap !important;
     }
 
 
@@ -1200,26 +1091,13 @@ button:disabled {
             0 !important;
 
         padding:
-            .7mm 1.2mm !important;
+            .6mm 1.1mm !important;
 
         font-size:
-            8pt !important;
+            10pt !important;
 
         border-radius:
             1.2mm !important;
-    }
-
-
-    .solve-tag {
-
-        margin-top:
-            .3mm !important;
-
-        padding:
-            .2mm .8mm !important;
-
-        font-size:
-            4.3pt !important;
     }
 
 
@@ -1399,14 +1277,6 @@ button:disabled {
 
         </div>
 
-
-    </div>
-
-
-
-    <div
-        class="summary"
-        id="summary">
 
     </div>
 
@@ -2191,41 +2061,6 @@ function buildStocks(item) {
 
 
 /* =====================================================
-   BEST TAG
-===================================================== */
-
-function solveHint(
-    item,
-    field
-) {
-
-
-    if (
-        item.SolveField
-        === field
-    ) {
-
-
-        return `
-
-            <div class="solve-tag">
-
-                BEST
-
-            </div>
-
-        `;
-
-    }
-
-
-    return "";
-
-}
-
-
-
-/* =====================================================
    GENERATE
 ===================================================== */
 
@@ -2256,10 +2091,32 @@ function generateQuote() {
 
 
 
-    const data =
+    const MAX_ROWS = 15;
+
+
+    let data =
         parseData(
             text
         );
+
+
+    if (
+        data.length > MAX_ROWS
+    ) {
+
+
+        alert(
+            "共讀到 " + data.length + " 組，A4 直式一頁上限為 " + MAX_ROWS + " 組，\n只會顯示前 " + MAX_ROWS + " 組。"
+        );
+
+
+        data =
+            data.slice(
+                0,
+                MAX_ROWS
+            );
+
+    }
 
 
     if (
@@ -2363,12 +2220,6 @@ function generateQuote() {
                     </div>
 
 
-                    ${solveHint(
-                        item,
-                        "Tenor"
-                    )}
-
-
                 </div>
 
 
@@ -2389,12 +2240,6 @@ function generateQuote() {
                     </div>
 
 
-                    ${solveHint(
-                        item,
-                        "Coupon"
-                    )}
-
-
                 </div>
 
 
@@ -2413,12 +2258,6 @@ function generateQuote() {
                         )}
 
                     </div>
-
-
-                    ${solveHint(
-                        item,
-                        "Strike"
-                    )}
 
 
                 </div>
@@ -2450,7 +2289,14 @@ function generateQuote() {
                             item.KIFreq
 
                             ? `
-                                <div class="ki-freq">
+                                <div class="ki-freq${
+                                    String(item.KIFreq)
+                                    .trim()
+                                    .toUpperCase()
+                                    === "EKI"
+                                    ? " eki"
+                                    : ""
+                                }">
 
                                     ${escapeHTML(
                                         item.KIFreq
@@ -2464,12 +2310,6 @@ function generateQuote() {
 
 
                     </div>
-
-
-                    ${solveHint(
-                        item,
-                        "KI"
-                    )}
 
 
                 </div>
@@ -2490,12 +2330,6 @@ function generateQuote() {
                         )}
 
                     </div>
-
-
-                    ${solveHint(
-                        item,
-                        "KO"
-                    )}
 
 
                 </div>
@@ -2537,201 +2371,6 @@ function generateQuote() {
         )
         .classList
         .add("on");
-
-
-    buildSummary(
-        data
-    );
-
-}
-
-
-
-/* =====================================================
-   SUMMARY
-===================================================== */
-
-function buildSummary(
-    data
-) {
-
-
-    const summary =
-        document
-        .getElementById(
-            "summary"
-        );
-
-
-
-    const currencies = [
-
-        ...new Set(
-
-            data
-
-            .map(
-                item =>
-                item.Currency
-            )
-
-            .filter(
-                Boolean
-            )
-
-        )
-
-    ];
-
-
-
-    const tenors = [
-
-        ...new Set(
-
-            data
-
-            .map(
-                item =>
-                item.Tenor
-            )
-
-            .filter(
-                Boolean
-            )
-
-        )
-
-    ];
-
-
-
-    const coupons =
-        data
-
-        .map(
-            item =>
-            parseFloat(
-                String(
-                    item.Coupon || ""
-                )
-                .replace(
-                    /%/g,
-                    ""
-                )
-            )
-        )
-
-        .filter(
-            value =>
-            !isNaN(value)
-        );
-
-
-
-    const maxCoupon =
-
-        coupons.length
-
-        ? Math.max(
-            ...coupons
-        ).toFixed(2) + "%"
-
-        : "-";
-
-
-
-    summary.innerHTML = `
-
-
-        <div class="summary-card">
-
-            <span>
-
-                今日精選
-
-            </span>
-
-            <strong>
-
-                ${data.length} 組
-
-            </strong>
-
-        </div>
-
-
-
-        <div class="summary-card">
-
-            <span>
-
-                幣別
-
-            </span>
-
-            <strong>
-
-                ${
-                    currencies
-                    .join(" / ")
-                    ||
-                    "-"
-                }
-
-            </strong>
-
-        </div>
-
-
-
-        <div class="summary-card">
-
-            <span>
-
-                天期
-
-            </span>
-
-            <strong>
-
-                ${
-                    tenors
-
-                    .map(
-                        tenor =>
-                        tenor + "M"
-                    )
-
-                    .join(" / ")
-
-                    ||
-                    "-"
-                }
-
-            </strong>
-
-        </div>
-
-
-
-        <div class="summary-card">
-
-            <span>
-
-                最高 Coupon
-
-            </span>
-
-            <strong>
-
-                ${maxCoupon}
-
-            </strong>
-
-        </div>
-
-    `;
 
 }
 
@@ -2992,14 +2631,6 @@ function clearAll() {
             "pasteArea"
         )
         .value =
-        "";
-
-
-    document
-        .getElementById(
-            "summary"
-        )
-        .innerHTML =
         "";
 
 
