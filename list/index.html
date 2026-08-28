@@ -783,7 +783,7 @@ button:disabled {
 
     size: A4 portrait;
 
-    margin: 6mm;
+    margin: 0;
 }
 
 
@@ -855,7 +855,9 @@ button:disabled {
         margin-bottom:
             0 !important;
 
-        width: 198mm !important;
+        width: 210mm !important;
+
+        min-height: 297mm !important;
 
         min-width:
             0 !important;
@@ -864,7 +866,7 @@ button:disabled {
             0 auto !important;
 
         padding:
-            4mm !important;
+            6mm 4mm 4mm !important;
 
         border-radius:
             0 !important;
@@ -963,13 +965,13 @@ button:disabled {
     .quote-head {
 
         grid-template-columns:
-            16mm
-            10mm
-            8mm
-            23.5mm
-            18mm
+            17mm
+            11mm
+            9mm
+            25mm
+            19mm
             28mm
-            17.5mm
+            18.5mm
             1fr !important;
 
         column-gap:
@@ -1006,20 +1008,20 @@ button:disabled {
     .quote-row {
 
         grid-template-columns:
-            16mm
-            10mm
-            8mm
-            23.5mm
-            18mm
+            17mm
+            11mm
+            9mm
+            25mm
+            19mm
             28mm
-            17.5mm
+            18.5mm
             1fr !important;
 
         column-gap:
             1.6mm !important;
 
         padding:
-            3.2mm 2mm !important;
+            var(--print-row-pad, 3.2mm) 2mm !important;
 
         border-radius:
             2mm !important;
@@ -1145,10 +1147,10 @@ button:disabled {
             0 !important;
 
         padding:
-            .7mm .5mm !important;
+            .8mm .7mm !important;
 
         font-size:
-            9.5pt !important;
+            10.5pt !important;
 
         border-radius:
             1.2mm !important;
@@ -2439,10 +2441,80 @@ function generateQuote() {
         .add("on");
 
 
+    setPrintRowHeight(
+        data.length
+    );
+
+
     fitPreview();
 
 }
 
+
+
+/* =====================================================
+   依商品檔數計算列印列高，讓 A4 一頁滿版
+===================================================== */
+
+function setPrintRowHeight(count) {
+
+
+    // A4 直式滿版可用高度（mm）扣掉表頭區塊、表頭列、頁尾與上下內距
+
+    const PAGE_H = 295.5;   // A4 297mm，保留 1.5mm 安全邊界
+
+
+    const FIXED_H = 50.9;   // 標題區 + 表頭列 + 頁尾 + 上下內距（實測值）
+
+
+    const ROW_CONTENT = 7.4;   // 一列文字本身的高度（實測值，mm）
+
+
+    const GAP = 2.2;   // 列與列的間距（mm）
+
+
+    const n =
+        Math.max(
+            1,
+            count
+        );
+
+
+    const listBudget =
+        PAGE_H
+        - FIXED_H
+        - (n - 1) * GAP;
+
+
+    let pad =
+        (listBudget / n - ROW_CONTENT) / 2;
+
+
+    // 安全範圍：太小會擠、太大會掉頁
+
+    if (pad < 2.5) {
+
+        pad = 2.5;
+
+    }
+
+
+    if (pad > 12) {
+
+        pad = 12;
+
+    }
+
+
+    document
+        .documentElement
+        .style
+        .setProperty(
+            "--print-row-pad",
+            pad.toFixed(2) + "mm"
+        );
+
+}
 
 
 /* =====================================================
