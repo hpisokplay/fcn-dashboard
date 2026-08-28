@@ -969,16 +969,16 @@ button:disabled {
             11mm
             9mm
             25mm
-            19mm
+            20mm
             28mm
-            18.5mm
+            21mm
             1fr !important;
 
         column-gap:
             1.6mm !important;
 
         padding:
-            2.2mm 2mm 2.2mm 3mm !important;
+            4mm 2mm 4mm 3mm !important;
 
         margin-bottom:
             1.5mm !important;
@@ -1012,9 +1012,9 @@ button:disabled {
             11mm
             9mm
             25mm
-            19mm
+            20mm
             28mm
-            18.5mm
+            21mm
             1fr !important;
 
         column-gap:
@@ -1147,10 +1147,10 @@ button:disabled {
             0 !important;
 
         padding:
-            .8mm .7mm !important;
+            .8mm .6mm !important;
 
         font-size:
-            10.5pt !important;
+            10pt !important;
 
         border-radius:
             1.2mm !important;
@@ -2464,30 +2464,28 @@ function setPrintRowHeight(count) {
     const PAGE_H = 295.5;   // A4 297mm，保留 1.5mm 安全邊界
 
 
-    const FIXED_H = 50.9;   // 標題區 + 表頭列 + 頁尾 + 上下內距（實測值）
+    const FIXED_H = 54.5;   // 標題區 + 表頭列 + 頁尾 + 上下內距（實測值）
 
 
-    const ROW_CONTENT = 7.4;   // 一列文字本身的高度（實測值，mm）
+    const ROW_CONTENT = 6.6;   // 一列文字本身的高度（實測值，mm）
 
 
     const GAP = 2.2;   // 列與列的間距（mm）
 
 
-    const n =
-        Math.max(
-            1,
-            count
-        );
+    // 固定列高：一律以「滿版 15 檔」為設計基準，每一列等高
+
+    const DESIGN_ROWS = 15;
 
 
     const listBudget =
         PAGE_H
         - FIXED_H
-        - (n - 1) * GAP;
+        - (DESIGN_ROWS - 1) * GAP;
 
 
     let pad =
-        (listBudget / n - ROW_CONTENT) / 2;
+        (listBudget / DESIGN_ROWS - ROW_CONTENT) / 2;
 
 
     // 安全範圍：太小會擠、太大會掉頁
