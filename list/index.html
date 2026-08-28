@@ -354,16 +354,16 @@ button:disabled {
 :root {
 
     --cols:
-        130px
-        88px
+        145px
         85px
-        185px
-        135px
-        170px
-        135px
-        minmax(400px, 1fr);
+        85px
+        205px
+        140px
+        165px
+        140px
+        minmax(0, 1fr);
 
-    --colgap: 14px;
+    --colgap: 16px;
 }
 
 
@@ -407,7 +407,7 @@ button:disabled {
 
     color: #f7d97a;
 
-    font-size: 27px;
+    font-size: 31px;
 
     font-weight: 900;
 
@@ -426,6 +426,9 @@ button:disabled {
 .quote-list {
 
     display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr);
 
     gap: 12px;
 }
@@ -463,6 +466,23 @@ button:disabled {
     min-width: 0;
 
     text-align: center;
+}
+
+
+/* 欄位分隔線（表頭與資料列共用） */
+
+.quote-row .cell + .cell {
+
+    border-left:
+        1px solid #e1e9f1;
+}
+
+
+.quote-head div + div {
+
+    border-left:
+        1px solid
+        rgba(255,255,255,.22);
 }
 
 
@@ -632,32 +652,31 @@ button:disabled {
 
 .stocks {
 
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+
+.stock {
+
     display: flex;
 
     align-items: center;
 
     justify-content: center;
 
-    flex-wrap: nowrap;
-
-    gap: 6px;
-}
-
-
-.stock {
-
-    display: inline-flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    flex: 0 1 auto;
+    width: 100%;
 
     min-width: 0;
 
     padding:
-        9px 10px;
+        9px 6px;
 
     background: #e8f1f8;
 
@@ -668,11 +687,23 @@ button:disabled {
 
     color: #143f63;
 
-    font-size: 22px;
+    font-size: 21px;
 
     font-weight: 900;
 
     white-space: nowrap;
+}
+
+
+/* 標的不足 4 檔時的透明佔位，維持欄位對齊 */
+
+.stock.blank {
+
+    background: transparent;
+
+    border-color: transparent;
+
+    color: transparent;
 }
 
 
@@ -912,17 +943,17 @@ button:disabled {
     .quote-head {
 
         grid-template-columns:
-            19mm
-            11mm
+            17mm
             10mm
-            25mm
-            18mm
-            24mm
+            9mm
+            27mm
+            19mm
+            22mm
             18mm
             1fr !important;
 
         column-gap:
-            1.5mm !important;
+            1.6mm !important;
 
         padding:
             1.6mm 2mm 1.6mm 3mm !important;
@@ -938,7 +969,7 @@ button:disabled {
     .quote-head div {
 
         font-size:
-            11pt !important;
+            12pt !important;
 
         letter-spacing:
             0 !important;
@@ -955,17 +986,17 @@ button:disabled {
     .quote-row {
 
         grid-template-columns:
-            19mm
-            11mm
+            17mm
             10mm
-            25mm
-            18mm
-            24mm
+            9mm
+            27mm
+            19mm
+            22mm
             18mm
             1fr !important;
 
         column-gap:
-            1.5mm !important;
+            1.6mm !important;
 
         padding:
             2.6mm 2mm !important;
@@ -991,6 +1022,21 @@ button:disabled {
 
         line-height:
             1 !important;
+    }
+
+
+    .quote-row .cell + .cell {
+
+        border-left:
+            .25mm solid #dbe5ee !important;
+    }
+
+
+    .quote-head div + div {
+
+        border-left:
+            .25mm solid
+            rgba(255,255,255,.28) !important;
     }
 
 
@@ -1078,7 +1124,7 @@ button:disabled {
     .stocks {
 
         gap:
-            .8mm !important;
+            1mm !important;
 
         flex-wrap:
             nowrap !important;
@@ -1091,10 +1137,10 @@ button:disabled {
             0 !important;
 
         padding:
-            .6mm 1.1mm !important;
+            .6mm .8mm !important;
 
         font-size:
-            10pt !important;
+            9.5pt !important;
 
         border-radius:
             1.2mm !important;
@@ -2022,39 +2068,52 @@ function buildStocks(item) {
     );
 
 
-    if (
-        !stocks.length
+    // 固定 4 格：不足的用透明佔位，讓每一檔都對齊同一欄
+
+    let html = "";
+
+
+    for (
+        let i = 0;
+        i < 4;
+        i++
     ) {
 
 
-        return `
+        if (stocks[i]) {
 
-            <span class="stock">
 
-                -
+            html += `
 
-            </span>
+                <span class="stock">
 
-        `;
+                    ${escapeHTML(stocks[i])}
+
+                </span>
+
+            `;
+
+        }
+
+        else {
+
+
+            html += `
+
+                <span class="stock blank">
+
+                    -
+
+                </span>
+
+            `;
+
+        }
 
     }
 
 
-    return stocks
-
-        .map(
-            stock => `
-
-                <span class="stock">
-
-                    ${escapeHTML(stock)}
-
-                </span>
-
-            `
-        )
-
-        .join("");
+    return html;
 
 }
 
