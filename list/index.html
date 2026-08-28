@@ -403,6 +403,12 @@ button:disabled {
 }
 
 
+.quote-head .two {
+
+    display: none;
+}
+
+
 .quote-head div {
 
     color: #f7d97a;
@@ -965,13 +971,13 @@ button:disabled {
     .quote-head {
 
         grid-template-columns:
-            17mm
-            11mm
-            9mm
-            25mm
-            20mm
-            28mm
+            15mm
+            12mm
+            12mm
             21mm
+            17mm
+            25mm
+            19mm
             1fr !important;
 
         column-gap:
@@ -991,10 +997,33 @@ button:disabled {
     .quote-head div {
 
         font-size:
-            10.8pt !important;
+            14pt !important;
 
         letter-spacing:
             0 !important;
+
+        line-height:
+            1.12 !important;
+    }
+
+
+    .quote-head .one {
+
+        display: none !important;
+    }
+
+
+    .quote-head .two {
+
+        display: block !important;
+    }
+
+
+    .quote-head .two b {
+
+        display: block !important;
+
+        font-weight: 900 !important;
     }
 
 
@@ -1008,13 +1037,13 @@ button:disabled {
     .quote-row {
 
         grid-template-columns:
-            17mm
-            11mm
-            9mm
-            25mm
-            20mm
-            28mm
+            15mm
+            12mm
+            12mm
             21mm
+            17mm
+            25mm
+            19mm
             1fr !important;
 
         column-gap:
@@ -1065,42 +1094,42 @@ button:disabled {
     .issuer-value {
 
         font-size:
-            15pt !important;
+            13.5pt !important;
     }
 
 
     .currency-value {
 
         font-size:
-            13pt !important;
+            11.5pt !important;
     }
 
 
     .tenor-value {
 
         font-size:
-            13pt !important;
+            11.5pt !important;
     }
 
 
     .coupon-value {
 
         font-size:
-            16.5pt !important;
+            15pt !important;
     }
 
 
     .strike-value {
 
         font-size:
-            14.5pt !important;
+            13pt !important;
     }
 
 
     .ki-value {
 
         font-size:
-            14pt !important;
+            12.5pt !important;
     }
 
 
@@ -1120,14 +1149,14 @@ button:disabled {
             1mm !important;
 
         font-size:
-            6.5pt !important;
+            6pt !important;
     }
 
 
     .ko-value {
 
         font-size:
-            14pt !important;
+            12.5pt !important;
     }
 
 
@@ -1150,7 +1179,7 @@ button:disabled {
             .8mm .6mm !important;
 
         font-size:
-            10pt !important;
+            9pt !important;
 
         border-radius:
             1.2mm !important;
@@ -1342,10 +1371,10 @@ button:disabled {
         class="quote-head"
         id="quoteHead">
 
-        <div>發行機構</div>
+        <div><span class="one">發行機構</span><span class="two"><b>發行</b><b>機構</b></span></div>
         <div>幣別</div>
         <div>天期</div>
-        <div>年化 Coupon</div>
+        <div><span class="one">年化 Coupon</span><span class="two"><b>年化</b><b>Coupon</b></span></div>
         <div>Strike</div>
         <div>KI</div>
         <div>KO</div>
@@ -2464,10 +2493,10 @@ function setPrintRowHeight(count) {
     const PAGE_H = 295.5;   // A4 297mm，保留 1.5mm 安全邊界
 
 
-    const FIXED_H = 54.5;   // 標題區 + 表頭列 + 頁尾 + 上下內距（實測值）
+    const FIXED_H = 60.5;   // 標題區 + 表頭列 + 頁尾 + 上下內距（實測值）
 
 
-    const ROW_CONTENT = 6.6;   // 一列文字本身的高度（實測值，mm）
+    const ROW_CONTENT = 6.36;   // 一列文字本身的高度（實測值，mm）
 
 
     const GAP = 2.2;   // 列與列的間距（mm）
