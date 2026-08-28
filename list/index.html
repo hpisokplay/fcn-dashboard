@@ -1,0 +1,2958 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>FCN 每日精選報價</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
+<style>
+
+/* =====================================================
+   全域
+===================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+
+    background: #eef3f8;
+
+    font-family:
+        "Microsoft JhengHei",
+        "PingFang TC",
+        Arial,
+        sans-serif;
+
+    color: #16324a;
+}
+
+
+/* =====================================================
+   整體
+===================================================== */
+
+.app {
+
+    width: 100%;
+
+    max-width: 1600px;
+
+    margin: 0 auto;
+
+    padding: 24px;
+}
+
+
+/* =====================================================
+   輸入區
+===================================================== */
+
+.control-panel {
+
+    background: #ffffff;
+
+    border-radius: 20px;
+
+    padding: 24px;
+
+    margin-bottom: 24px;
+
+    box-shadow:
+        0 8px 30px
+        rgba(30,55,80,.10);
+}
+
+
+.control-title {
+
+    font-size: 28px;
+
+    font-weight: 900;
+
+    color: #0d3558;
+
+    margin-bottom: 8px;
+}
+
+
+.control-desc {
+
+    color: #647789;
+
+    font-size: 15px;
+
+    line-height: 1.8;
+
+    margin-bottom: 15px;
+}
+
+
+textarea {
+
+    width: 100%;
+
+    height: 210px;
+
+    padding: 15px;
+
+    border:
+        2px solid #d6e0e9;
+
+    border-radius: 14px;
+
+    outline: none;
+
+    resize: vertical;
+
+    font-family:
+        Consolas,
+        "Microsoft JhengHei",
+        monospace;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+textarea:focus {
+
+    border-color: #347eb5;
+}
+
+
+/* =====================================================
+   Buttons
+===================================================== */
+
+.buttons {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-top: 16px;
+}
+
+
+button {
+
+    border: none;
+
+    border-radius: 11px;
+
+    padding: 13px 24px;
+
+    cursor: pointer;
+
+    font-size: 15px;
+
+    font-weight: 800;
+
+    transition: .2s;
+}
+
+
+button:hover {
+
+    transform:
+        translateY(-1px);
+}
+
+
+button:disabled {
+
+    opacity: .6;
+
+    cursor: wait;
+
+    transform: none;
+}
+
+
+.btn-main {
+
+    background: #0d3c70;
+
+    color: white;
+}
+
+
+.btn-secondary {
+
+    background: #e8f0f6;
+
+    color: #19496d;
+}
+
+
+.btn-gold {
+
+    background: #daa51b;
+
+    color: white;
+}
+
+
+.btn-print {
+
+    background: #2f6b57;
+
+    color: white;
+}
+
+
+/* =====================================================
+   FCN 主畫面
+===================================================== */
+
+#quoteArea {
+
+    width: 100%;
+
+    min-width: 1180px;
+
+    background:
+
+        radial-gradient(
+            circle at 85% 0%,
+            rgba(0,149,255,.25),
+            transparent 33%
+        ),
+
+        radial-gradient(
+            circle at 10% 100%,
+            rgba(0,115,210,.15),
+            transparent 30%
+        ),
+
+        linear-gradient(
+            135deg,
+            #061d45,
+            #073f76 55%,
+            #0069a9
+        );
+
+    border-radius: 24px;
+
+    padding: 38px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 14px 40px
+        rgba(5,37,72,.22);
+}
+
+
+/* =====================================================
+   Header
+===================================================== */
+
+.header {
+
+    display: flex;
+
+    align-items: flex-end;
+
+    justify-content: space-between;
+
+    gap: 30px;
+
+    padding-bottom: 22px;
+
+    margin-bottom: 22px;
+
+    border-bottom:
+        1px solid rgba(255,255,255,.20); }
+
+
+.brand-small {
+
+    color: #e2bd61;
+
+    letter-spacing: 5px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    margin-bottom: 8px;
+}
+
+
+.title {
+
+    color: #ffffff;
+
+    font-size: 42px;
+
+    font-weight: 900;
+
+    letter-spacing: 2px;
+}
+
+
+.subtitle {
+
+    margin-top: 10px;
+
+    color: #c0d5e7;
+
+    font-size: 16px;
+}
+
+
+.date-box {
+
+    text-align: right;
+}
+
+
+.today {
+
+    font-size: 31px;
+
+    color: #f5d377;
+
+    font-weight: 900;
+}
+
+
+.update {
+
+    margin-top: 4px;
+
+    color: #9dbbd1;
+
+    font-size: 11px;
+
+    letter-spacing: 1px;
+}
+
+
+/* =====================================================
+   Summary
+===================================================== */
+
+.summary {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 14px;
+
+    margin-bottom: 25px;
+}
+
+
+.summary-card {
+
+    padding: 16px 20px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(255,255,255,.08);
+
+    border:
+        1px solid
+        rgba(255,255,255,.13);
+}
+
+
+.summary-card span {
+
+    display: block;
+
+    color: #bdd0df;
+
+    font-size: 13px;
+
+    margin-bottom: 6px;
+}
+
+
+.summary-card strong {
+
+    color: #f3cd62;
+
+    font-size: 25px;
+
+    font-weight: 900;
+}
+
+
+/* =====================================================
+   報價列
+===================================================== */
+
+.quote-list {
+
+    display: grid;
+
+    gap: 14px;
+}
+
+
+.quote-row {
+
+    display: grid;
+
+    grid-template-columns:
+        150px
+        75px
+        80px
+        145px
+        125px
+        115px
+        115px
+        minmax(270px, 1fr);
+
+    column-gap: 18px;
+
+    align-items: center;
+
+    padding:
+        19px 22px;
+
+    background:
+        rgba(255,255,255,.97);
+
+    border-radius: 18px;
+
+    border-left:
+        7px solid #e0b64f;
+
+    box-shadow:
+        0 5px 15px
+        rgba(0,0,0,.08);
+}
+
+
+.cell {
+
+    min-width: 0;
+}
+
+
+.label {
+
+    margin-bottom: 5px;
+
+    color: #8493a2;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+.value {
+
+    font-weight: 900;
+
+    color: #17354f;
+
+    white-space: nowrap;
+
+    line-height: 1.15;
+}
+
+
+/* =====================================================
+   發行機構
+===================================================== */
+
+.issuer-value {
+
+    font-size: 27px;
+
+    color: #174f82;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+/* =====================================================
+   Currency
+===================================================== */
+
+.currency-value {
+
+    font-size: 24px;
+}
+
+
+/* =====================================================
+   Tenor
+===================================================== */
+
+.tenor-value {
+
+    font-size: 25px;
+}
+
+
+/* =====================================================
+   Coupon
+===================================================== */
+
+.coupon-value {
+
+    color: #d99b00;
+
+    font-size: 31px;
+
+    font-weight: 900;
+}
+
+
+/* =====================================================
+   Strike
+===================================================== */
+
+.strike-value {
+
+    color: #008273;
+
+    font-size: 28px;
+
+    font-weight: 900;
+}
+
+
+/* =====================================================
+   KI
+===================================================== */
+
+.ki-value {
+
+    color: #a45722;
+
+    font-size: 27px;
+
+    font-weight: 900;
+}
+
+
+/* KI 數字 + AKI / EKI 並排 */
+
+.ki-line {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    flex-wrap: nowrap;
+}
+
+
+/* AKI / EKI */
+
+.ki-freq {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 3px 7px;
+
+    border-radius: 6px;
+
+    background: #f4e7dc;
+
+    color: #8c4a20;
+
+    font-size: 11px;
+
+    font-weight: 900;
+
+    letter-spacing: .5px;
+
+    margin-top: 0;
+}
+
+
+/* =====================================================
+   KO
+===================================================== */
+
+.ko-value {
+
+    color: #1671b3;
+
+    font-size: 27px;
+
+    font-weight: 900;
+}
+
+
+/* =====================================================
+   股票
+===================================================== */
+
+.stocks {
+
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+}
+
+
+.stock {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-width: 78px;
+
+    padding:
+        10px 15px;
+
+    background: #e8f1f8;
+
+    border:
+        1px solid #d0e0ec;
+
+    border-radius: 9px;
+
+    color: #143f63;
+
+    font-size: 24px;
+
+    font-weight: 900;
+}
+
+
+/* =====================================================
+   BEST
+===================================================== */
+
+.solve-tag {
+
+    display: inline-block;
+
+    margin-top: 5px;
+
+    padding:
+        2px 7px;
+
+    border-radius: 5px;
+
+    background: #fff0c9;
+
+    color: #9f7009;
+
+    font-size: 9px;
+
+    font-weight: 900;
+}
+
+
+/* =====================================================
+   Empty
+===================================================== */
+
+.empty {
+
+    padding: 70px 20px;
+
+    text-align: center;
+
+    border:
+        1px dashed
+        rgba(255,255,255,.25);
+
+    border-radius: 16px;
+
+    color:
+        rgba(255,255,255,.70);
+}
+
+
+/* =====================================================
+   Footer
+===================================================== */
+
+.footer-note {
+
+    margin-top: 20px;
+
+    padding-top: 15px;
+
+    border-top:
+        1px solid
+        rgba(255,255,255,.13);
+
+    color: #a5bfd1;
+
+    font-size: 11px;
+
+    line-height: 1.7;
+}
+
+
+/* =====================================================
+   頁面在小螢幕可以橫向
+===================================================== */
+
+.preview-wrapper {
+
+    width: 100%;
+
+    overflow-x: auto;
+
+    padding-bottom: 10px;
+}
+
+
+/* =====================================================
+   A4 直式・單頁列印
+===================================================== */
+
+@page {
+
+    size: A4 portrait;
+
+    margin: 6mm;
+}
+
+
+@media print {
+
+
+    .control-panel {
+
+        display: none !important;
+    }
+
+
+    html,
+    body {
+
+        margin: 0 !important;
+
+        padding: 0 !important;
+
+        width: 100% !important;
+
+        height: auto !important;
+
+        background:
+            #ffffff !important;
+
+        -webkit-print-color-adjust:
+            exact !important;
+
+        print-color-adjust:
+            exact !important;
+    }
+
+
+    .app {
+
+        margin: 0 !important;
+
+        padding: 0 !important;
+
+        width: 100% !important;
+
+        max-width:
+            none !important;
+    }
+
+
+    .preview-wrapper {
+
+        width: 100% !important;
+
+        overflow:
+            visible !important;
+
+        padding: 0 !important;
+
+        margin: 0 !important;
+    }
+
+
+    #quoteArea {
+
+        width: 198mm !important;
+
+        min-width:
+            0 !important;
+
+        margin:
+            0 auto !important;
+
+        padding:
+            4mm !important;
+
+        border-radius:
+            0 !important;
+
+        box-shadow:
+            none !important;
+
+        overflow:
+            visible !important;
+
+        background:
+
+            radial-gradient(
+                circle at 85% 0%,
+                rgba(0,149,255,.25),
+                transparent 33%
+            ),
+
+            radial-gradient(
+                circle at 10% 100%,
+                rgba(0,115,210,.15),
+                transparent 30%
+            ),
+
+            linear-gradient(
+                135deg,
+                #061d45,
+                #073f76 55%,
+                #0069a9
+            ) !important;
+    }
+
+
+    .header {
+
+        gap:
+            3mm !important;
+
+        padding-bottom:
+            2.5mm !important;
+
+        margin-bottom:
+            2.5mm !important;
+    }
+
+
+    .brand-small {
+
+        font-size:
+            6pt !important;
+
+        letter-spacing:
+            2px !important;
+
+        margin-bottom:
+            1mm !important;
+    }
+
+
+    .title {
+
+        font-size:
+            17pt !important;
+
+        letter-spacing:
+            1px !important;
+    }
+
+
+    .subtitle {
+
+        font-size:
+            6.5pt !important;
+
+        margin-top:
+            1mm !important;
+    }
+
+
+    .today {
+
+        font-size:
+            12pt !important;
+    }
+
+
+    .update {
+
+        font-size:
+            5pt !important;
+    }
+
+
+    .summary {
+
+        grid-template-columns:
+            repeat(4, 1fr) !important;
+
+        gap:
+            1.5mm !important;
+
+        margin-bottom:
+            2.5mm !important;
+    }
+
+
+    .summary-card {
+
+        min-width:
+            0 !important;
+
+        padding:
+            1.5mm 2mm !important;
+
+        border-radius:
+            2mm !important;
+    }
+
+
+    .summary-card span {
+
+        font-size:
+            5.5pt !important;
+
+        margin-bottom:
+            .5mm !important;
+    }
+
+
+    .summary-card strong {
+
+        font-size:
+            9.5pt !important;
+    }
+
+
+    .quote-list {
+
+        gap:
+            1.3mm !important;
+    }
+
+
+    .quote-row {
+
+        grid-template-columns:
+            22mm
+            11mm
+            12mm
+            22mm
+            18mm
+            17mm
+            17mm
+            1fr !important;
+
+        column-gap:
+            1mm !important;
+
+        padding:
+            1.5mm 2mm !important;
+
+        border-radius:
+            2mm !important;
+
+        border-left-width:
+            1mm !important;
+
+        box-shadow:
+            none !important;
+
+        break-inside:
+            avoid !important;
+
+        page-break-inside:
+            avoid !important;
+    }
+
+
+    .label {
+
+        font-size:
+            5.2pt !important;
+
+        margin-bottom:
+            .4mm !important;
+    }
+
+
+    .value {
+
+        line-height:
+            1 !important;
+    }
+
+
+    .issuer-value {
+
+        font-size:
+            9.5pt !important;
+    }
+
+
+    .currency-value {
+
+        font-size:
+            8.5pt !important;
+    }
+
+
+    .tenor-value {
+
+        font-size:
+            8.5pt !important;
+    }
+
+
+    .coupon-value {
+
+        font-size:
+            11pt !important;
+    }
+
+
+    .strike-value {
+
+        font-size:
+            10pt !important;
+    }
+
+
+    .ki-value {
+
+        font-size:
+            9.5pt !important;
+    }
+
+
+    .ki-line {
+
+        display:
+            flex !important;
+
+        align-items:
+            center !important;
+
+        gap:
+            1mm !important;
+
+        flex-wrap:
+            nowrap !important;
+    }
+
+
+    .ki-freq {
+
+        margin-top:
+            0 !important;
+
+        padding:
+            .2mm .8mm !important;
+
+        border-radius:
+            1mm !important;
+
+        font-size:
+            4.8pt !important;
+    }
+
+
+    .ko-value {
+
+        font-size:
+            9.5pt !important;
+    }
+
+
+    .stocks {
+
+        gap:
+            .8mm !important;
+    }
+
+
+    .stock {
+
+        min-width:
+            0 !important;
+
+        padding:
+            .7mm 1.2mm !important;
+
+        font-size:
+            8pt !important;
+
+        border-radius:
+            1.2mm !important;
+    }
+
+
+    .solve-tag {
+
+        margin-top:
+            .3mm !important;
+
+        padding:
+            .2mm .8mm !important;
+
+        font-size:
+            4.3pt !important;
+    }
+
+
+    .footer-note {
+
+        margin-top:
+            2mm !important;
+
+        padding-top:
+            1.5mm !important;
+
+        font-size:
+            4.8pt !important;
+
+        line-height:
+            1.35 !important;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+<!-- =====================================================
+     CONTROL
+===================================================== -->
+
+<div class="control-panel">
+
+
+    <div class="control-title">
+
+        FCN 每日報價產生器
+
+    </div>
+
+
+    <div class="control-desc">
+
+        直接貼上原始 FCN 報價資料。<br>
+
+        <b>Best 欄位規則：</b>
+
+        GS (12.51%) → GS 是「發行機構」；
+
+        12.51% 依 Solve 自動補回 Coupon、Strike、KI、KO 等正確欄位。
+
+    </div>
+
+
+    <textarea
+        id="pasteArea"
+        placeholder="直接從原始 FCN 表格複製資料 → 貼在這裡"></textarea>
+
+
+    <div class="buttons">
+
+
+        <button
+            class="btn-main"
+            onclick="generateQuote()">
+
+            生成每日報價
+
+        </button>
+
+
+        <button
+            class="btn-secondary"
+            onclick="loadExample()">
+
+            載入範例
+
+        </button>
+
+
+        <button
+            class="btn-secondary"
+            onclick="clearAll()">
+
+            清空
+
+        </button>
+
+
+        <button
+            class="btn-gold"
+            id="saveImageBtn"
+            onclick="saveAsImage()">
+
+            📷 下載成圖片
+
+        </button>
+
+
+        <button
+            class="btn-print"
+            onclick="window.print()">
+
+            🖨️ A4 列印
+
+        </button>
+
+
+    </div>
+
+
+</div>
+
+
+
+<!-- =====================================================
+     PREVIEW
+===================================================== -->
+
+<div class="preview-wrapper">
+
+
+<div id="quoteArea">
+
+
+    <div class="header">
+
+
+        <div>
+
+
+            <div class="brand-small">
+
+                STRUCTURED PRODUCTS
+
+            </div>
+
+
+            <div class="title">
+
+                FCN 每日精選報價
+
+            </div>
+
+
+            <div class="subtitle">
+
+                精選條件｜快速比較｜掌握每日投資機會
+
+            </div>
+
+
+        </div>
+
+
+
+        <div class="date-box">
+
+
+            <div
+                class="today"
+                id="today">
+
+            </div>
+
+
+            <div class="update">
+
+                DAILY INDICATIVE TERMS
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <div
+        class="summary"
+        id="summary">
+
+    </div>
+
+
+
+    <div
+        class="quote-list"
+        id="quoteList">
+
+
+        <div class="empty">
+
+            貼上 FCN 報價資料後<br>
+
+            按「生成每日報價」
+
+        </div>
+
+
+    </div>
+
+
+
+    <div class="footer-note">
+
+        ※ 本資料為每日商品條件整理，僅供內部商品比較與業務溝通使用。<br>
+
+        ※ 實際交易條件及成交條件，仍應以交易當時正式報價及相關文件為準。
+
+    </div>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+<script>
+
+
+/* =====================================================
+   DATE
+===================================================== */
+
+function setToday() {
+
+    const now =
+        new Date();
+
+
+    const y =
+        now.getFullYear();
+
+
+    const m =
+        String(
+            now.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    const d =
+        String(
+            now.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    document
+        .getElementById(
+            "today"
+        )
+        .innerText =
+        `${y}.${m}.${d}`;
+
+}
+
+
+setToday();
+
+
+
+/* =====================================================
+   HTML
+===================================================== */
+
+function escapeHTML(value) {
+
+    if (
+        value === undefined ||
+        value === null
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+
+/* =====================================================
+   BEST → 發行機構
+===================================================== */
+
+function extractIssuer(text) {
+
+
+    if (!text) {
+
+        return "";
+
+    }
+
+
+    return String(text)
+
+        .replace(
+            /\s*\([^)]*\)\s*$/,
+            ""
+        )
+
+        .trim();
+
+}
+
+
+
+/* =====================================================
+   BEST → 數值
+===================================================== */
+
+function extractBestValue(text) {
+
+
+    if (!text) {
+
+        return "";
+
+    }
+
+
+    const match =
+        String(text)
+        .match(
+            /\(([^()]*)\)\s*$/
+        );
+
+
+    if (!match) {
+
+        return "";
+
+    }
+
+
+    return match[1]
+        .trim();
+
+}
+
+
+
+/* =====================================================
+   SOLVE
+===================================================== */
+
+function normalizeSolve(text) {
+
+
+    if (!text) {
+
+        return "";
+
+    }
+
+
+    let solve =
+        String(text)
+
+        .trim()
+
+        .toLowerCase()
+
+        .replace(
+            /\s+/g,
+            ""
+        )
+
+        .replace(
+            /[_-]/g,
+            ""
+        );
+
+
+    const map = {
+
+
+        "coupon":
+            "Coupon",
+
+
+        "票息":
+            "Coupon",
+
+
+        "strike":
+            "Strike",
+
+
+        "ki":
+            "KI",
+
+
+        "ko":
+            "KO",
+
+
+        "tenor":
+            "Tenor",
+
+
+        "tenorm":
+            "Tenor",
+
+
+        "couponperiod":
+            "CouponPeriod",
+
+
+        "kifreq":
+            "KIFreq",
+
+
+        "kofreq":
+            "KOFreq",
+
+
+        "kostart":
+            "KOStart",
+
+
+        "memoryko":
+            "MemoryKO"
+
+    };
+
+
+    return map[solve] || "";
+
+}
+
+
+
+/* =====================================================
+   CLEAN CELL
+===================================================== */
+
+function cleanCell(value) {
+
+
+    return String(
+        value ?? ""
+    )
+
+    .replace(
+        /\u00A0/g,
+        " "
+    )
+
+    .replace(
+        /\r/g,
+        ""
+    )
+
+    .replace(
+        /\n/g,
+        " "
+    )
+
+    .trim();
+
+}
+
+
+
+/* =====================================================
+   SPLIT ROW
+===================================================== */
+
+function splitRow(line) {
+
+
+    if (
+        line.includes("\t")
+    ) {
+
+
+        return line
+
+            .split("\t")
+
+            .map(
+                cleanCell
+            );
+
+    }
+
+
+    return line
+
+        .trim()
+
+        .split(
+            /\s{2,}/
+        )
+
+        .map(
+            cleanCell
+        );
+
+}
+
+
+
+/* =====================================================
+   找 FCN 的位置
+===================================================== */
+
+function findFCNIndex(row) {
+
+
+    return row.findIndex(
+        cell =>
+
+        String(cell)
+        .trim()
+        .toUpperCase()
+        === "FCN"
+    );
+
+}
+
+
+
+/* =====================================================
+   解析一列商品
+===================================================== */
+
+function parseProductRow(row) {
+
+
+    const fcnIndex =
+        findFCNIndex(
+            row
+        );
+
+
+    if (
+        fcnIndex < 2
+    ) {
+
+        return null;
+
+    }
+
+
+
+    const solveText =
+        cleanCell(
+            row[
+                fcnIndex - 1
+            ]
+        );
+
+
+    const bestText =
+        cleanCell(
+            row[
+                fcnIndex - 2
+            ]
+        );
+
+
+
+    let item = {
+
+
+        Best:
+            bestText,
+
+
+        Solve:
+            solveText,
+
+
+        Type:
+            "FCN",
+
+
+        Currency:
+            cleanCell(
+                row[
+                    fcnIndex + 1
+                ]
+            ),
+
+
+        Tenor:
+            cleanCell(
+                row[
+                    fcnIndex + 2
+                ]
+            ),
+
+
+        Coupon:
+            cleanCell(
+                row[
+                    fcnIndex + 3
+                ]
+            ),
+
+
+        CouponPeriod:
+            cleanCell(
+                row[
+                    fcnIndex + 4
+                ]
+            ),
+
+
+        Strike:
+            cleanCell(
+                row[
+                    fcnIndex + 5
+                ]
+            ),
+
+
+        KI:
+            cleanCell(
+                row[
+                    fcnIndex + 6
+                ]
+            ),
+
+
+        KIFreq:
+            cleanCell(
+                row[
+                    fcnIndex + 7
+                ]
+            ),
+
+
+        KO:
+            cleanCell(
+                row[
+                    fcnIndex + 8
+                ]
+            ),
+
+
+        KOFreq:
+            cleanCell(
+                row[
+                    fcnIndex + 9
+                ]
+            ),
+
+
+        KOStart:
+            cleanCell(
+                row[
+                    fcnIndex + 10
+                ]
+            ),
+
+
+        MemoryKO:
+            cleanCell(
+                row[
+                    fcnIndex + 11
+                ]
+            ),
+
+
+        U1:
+            cleanCell(
+                row[
+                    fcnIndex + 12
+                ]
+            ),
+
+
+        U2:
+            cleanCell(
+                row[
+                    fcnIndex + 13
+                ]
+            ),
+
+
+        U3:
+            cleanCell(
+                row[
+                    fcnIndex + 14
+                ]
+            ),
+
+
+        U4:
+            cleanCell(
+                row[
+                    fcnIndex + 15
+                ]
+            )
+
+    };
+
+
+
+    item.Issuer =
+        extractIssuer(
+            bestText
+        );
+
+
+    item.BestValue =
+        extractBestValue(
+            bestText
+        );
+
+
+    item.SolveField =
+        normalizeSolve(
+            solveText
+        );
+
+
+    if (
+        item.SolveField &&
+        item.BestValue
+    ) {
+
+
+        item[
+            item.SolveField
+        ] =
+            item.BestValue;
+
+    }
+
+
+
+    return item;
+
+}
+
+
+
+/* =====================================================
+   PARSE ALL DATA
+===================================================== */
+
+function parseData(text) {
+
+
+    const rawLines =
+        String(text)
+
+        .replace(
+            /\u00A0/g,
+            " "
+        )
+
+        .split(
+            /\r?\n/
+        )
+
+        .filter(
+            line =>
+            line.trim() !== ""
+        );
+
+
+    let data = [];
+
+
+    rawLines.forEach(
+        line => {
+
+
+            const row =
+                splitRow(
+                    line
+                );
+
+
+            const fcnIndex =
+                findFCNIndex(
+                    row
+                );
+
+
+            if (
+                fcnIndex === -1
+            ) {
+
+                return;
+
+            }
+
+
+            const item =
+                parseProductRow(
+                    row
+                );
+
+
+            if (
+                item
+            ) {
+
+                data.push(
+                    item
+                );
+
+            }
+
+        }
+    );
+
+
+    return data;
+
+}
+
+
+
+/* =====================================================
+   STOCKS
+===================================================== */
+
+function buildStocks(item) {
+
+
+    const stocks = [
+
+        item.U1,
+
+        item.U2,
+
+        item.U3,
+
+        item.U4
+
+    ]
+
+    .filter(
+        value => {
+
+
+            if (!value) {
+
+                return false;
+
+            }
+
+
+            const v =
+                String(value)
+                .trim()
+                .toUpperCase();
+
+
+            return (
+
+                v !== "" &&
+
+                v !== "NA" &&
+
+                v !== "-"
+
+            );
+
+        }
+    );
+
+
+    if (
+        !stocks.length
+    ) {
+
+
+        return `
+
+            <span class="stock">
+
+                -
+
+            </span>
+
+        `;
+
+    }
+
+
+    return stocks
+
+        .map(
+            stock => `
+
+                <span class="stock">
+
+                    ${escapeHTML(stock)}
+
+                </span>
+
+            `
+        )
+
+        .join("");
+
+}
+
+
+
+/* =====================================================
+   BEST TAG
+===================================================== */
+
+function solveHint(
+    item,
+    field
+) {
+
+
+    if (
+        item.SolveField
+        === field
+    ) {
+
+
+        return `
+
+            <div class="solve-tag">
+
+                BEST
+
+            </div>
+
+        `;
+
+    }
+
+
+    return "";
+
+}
+
+
+
+/* =====================================================
+   GENERATE
+===================================================== */
+
+function generateQuote() {
+
+
+    const text =
+        document
+        .getElementById(
+            "pasteArea"
+        )
+        .value;
+
+
+    if (
+        !text.trim()
+    ) {
+
+
+        alert(
+            "請先貼上 FCN 報價資料"
+        );
+
+
+        return;
+
+    }
+
+
+
+    const data =
+        parseData(
+            text
+        );
+
+
+    if (
+        !data.length
+    ) {
+
+
+        alert(
+            "沒有找到有效的 FCN 商品資料。\n請確認複製內容有包含 FCN 那一欄。"
+        );
+
+
+        return;
+
+    }
+
+
+
+    const list =
+        document
+        .getElementById(
+            "quoteList"
+        );
+
+
+    list.innerHTML = "";
+
+
+
+    data.forEach(
+        item => {
+
+
+            const row =
+                document
+                .createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "quote-row";
+
+
+            row.innerHTML = `
+
+
+                <div class="cell">
+
+
+                    <div class="label">
+
+                        發行機構
+
+                    </div>
+
+
+                    <div
+                        class="
+                            value
+                            issuer-value
+                        ">
+
+                        ${escapeHTML(
+                            item.Issuer || "-"
+                        )}
+
+                    </div>
+
+
+                </div>
+
+
+
+                <div class="cell">
+
+
+                    <div class="label">
+
+                        幣別
+
+                    </div>
+
+
+                    <div
+                        class="
+                            value
+                            currency-value
+                        ">
+
+                        ${escapeHTML(
+                            item.Currency || "-"
+                        )}
+
+                    </div>
+
+
+                </div>
+
+
+
+                <div class="cell">
+
+
+                    <div class="label">
+
+                        天期
+
+                    </div>
+
+
+                    <div
+                        class="
+                            value
+                            tenor-value
+                        ">
+
+                        ${escapeHTML(
+                            item.Tenor || "-"
+                        )}${item.Tenor ? "M" : ""}
+
+                    </div>
+
+
+                    ${solveHint(
+                        item,
+                        "Tenor"
+                    )}
+
+
+                </div>
+
+
+
+                <div class="cell">
+
+
+                    <div class="label">
+
+                        年化 Coupon
+
+                    </div>
+
+
+                    <div
+                        class="
+                            value
+                            coupon-value
+                        ">
+
+                        ${escapeHTML(
+                            item.Coupon || "-"
+                        )}
+
+                    </div>
+
+
+                    ${solveHint(
+                        item,
+                        "Coupon"
+                    )}
+
+
+                </div>
+
+
+
+                <div class="cell">
+
+
+                    <div class="label">
+
+                        Strike
+
+                    </div>
+
+
+                    <div
+                        class="
+                            value
+                            strike-value
+                        ">
+
+                        ${escapeHTML(
+                            item.Strike || "-"
+                        )}
+
+                    </div>
+
+
+                    ${solveHint(
+                        item,
+                        "Strike"
+                    )}
+
+
+                </div>
+
+
+
+                <!-- KI + AKI / EKI -->
+
+                <div class="cell">
+
+
+                    <div class="label">
+
+                        KI
+
+                    </div>
+
+
+                    <div class="ki-line">
+
+
+                        <div
+                            class="
+                                value
+                                ki-value
+                            ">
+
+                            ${escapeHTML(
+                                item.KI || "-"
+                            )}
+
+                        </div>
+
+
+                        ${
+                            item.KIFreq
+
+                            ? `
+                                <div class="ki-freq">
+
+                                    ${escapeHTML(
+                                        item.KIFreq
+                                    )}
+
+                                </div>
+                              `
+
+                            : ""
+                        }
+
+
+                    </div>
+
+
+                    ${solveHint(
+                        item,
+                        "KI"
+                    )}
+
+
+                </div>
+
+
+
+                <div class="cell">
+
+
+                    <div class="label">
+
+                        KO
+
+                    </div>
+
+
+                    <div
+                        class="
+                            value
+                            ko-value
+                        ">
+
+                        ${escapeHTML(
+                            item.KO || "-"
+                        )}
+
+                    </div>
+
+
+                    ${solveHint(
+                        item,
+                        "KO"
+                    )}
+
+
+                </div>
+
+
+
+                <div
+                    class="
+                        cell
+                        stocks-cell
+                    ">
+
+
+                    <div class="label">
+
+                        連結標的
+
+                    </div>
+
+
+                    <div class="stocks">
+
+                        ${buildStocks(
+                            item
+                        )}
+
+                    </div>
+
+
+                </div>
+
+            `;
+
+
+            list.appendChild(
+                row
+            );
+
+        }
+    );
+
+
+    buildSummary(
+        data
+    );
+
+}
+
+
+
+/* =====================================================
+   SUMMARY
+===================================================== */
+
+function buildSummary(
+    data
+) {
+
+
+    const summary =
+        document
+        .getElementById(
+            "summary"
+        );
+
+
+
+    const currencies = [
+
+        ...new Set(
+
+            data
+
+            .map(
+                item =>
+                item.Currency
+            )
+
+            .filter(
+                Boolean
+            )
+
+        )
+
+    ];
+
+
+
+    const tenors = [
+
+        ...new Set(
+
+            data
+
+            .map(
+                item =>
+                item.Tenor
+            )
+
+            .filter(
+                Boolean
+            )
+
+        )
+
+    ];
+
+
+
+    const coupons =
+        data
+
+        .map(
+            item =>
+            parseFloat(
+                String(
+                    item.Coupon || ""
+                )
+                .replace(
+                    /%/g,
+                    ""
+                )
+            )
+        )
+
+        .filter(
+            value =>
+            !isNaN(value)
+        );
+
+
+
+    const maxCoupon =
+
+        coupons.length
+
+        ? Math.max(
+            ...coupons
+        ).toFixed(2) + "%"
+
+        : "-";
+
+
+
+    summary.innerHTML = `
+
+
+        <div class="summary-card">
+
+            <span>
+
+                今日精選
+
+            </span>
+
+            <strong>
+
+                ${data.length} 組
+
+            </strong>
+
+        </div>
+
+
+
+        <div class="summary-card">
+
+            <span>
+
+                幣別
+
+            </span>
+
+            <strong>
+
+                ${
+                    currencies
+                    .join(" / ")
+                    ||
+                    "-"
+                }
+
+            </strong>
+
+        </div>
+
+
+
+        <div class="summary-card">
+
+            <span>
+
+                天期
+
+            </span>
+
+            <strong>
+
+                ${
+                    tenors
+
+                    .map(
+                        tenor =>
+                        tenor + "M"
+                    )
+
+                    .join(" / ")
+
+                    ||
+                    "-"
+                }
+
+            </strong>
+
+        </div>
+
+
+
+        <div class="summary-card">
+
+            <span>
+
+                最高 Coupon
+
+            </span>
+
+            <strong>
+
+                ${maxCoupon}
+
+            </strong>
+
+        </div>
+
+    `;
+
+}
+
+
+
+/* =====================================================
+   IMAGE
+===================================================== */
+
+async function saveAsImage() {
+
+
+    const quoteArea =
+        document
+        .getElementById(
+            "quoteArea"
+        );
+
+
+    const rows =
+        quoteArea
+        .querySelectorAll(
+            ".quote-row"
+        );
+
+
+    if (
+        !rows.length
+    ) {
+
+
+        alert(
+            "請先生成 FCN 每日報價"
+        );
+
+
+        return;
+
+    }
+
+
+
+    const button =
+        document
+        .getElementById(
+            "saveImageBtn"
+        );
+
+
+    const oldText =
+        button.innerHTML;
+
+
+    button.disabled =
+        true;
+
+
+    button.innerHTML =
+        "圖片產生中...";
+
+
+
+    try {
+
+
+        await new Promise(
+            resolve =>
+            setTimeout(
+                resolve,
+                150
+            )
+        );
+
+
+
+        const canvas =
+            await html2canvas(
+
+                quoteArea,
+
+                {
+
+                    scale: 2,
+
+                    useCORS: true,
+
+                    backgroundColor:
+                        "#061d45",
+
+                    logging:
+                        false,
+
+                    width:
+                        quoteArea.scrollWidth,
+
+                    height:
+                        quoteArea.scrollHeight,
+
+                    windowWidth:
+                        quoteArea.scrollWidth,
+
+                    windowHeight:
+                        quoteArea.scrollHeight
+
+                }
+
+            );
+
+
+
+        const imageURL =
+            canvas.toDataURL(
+                "image/png",
+                1
+            );
+
+
+
+        const now =
+            new Date();
+
+
+        const y =
+            now.getFullYear();
+
+
+        const m =
+            String(
+                now.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        const d =
+            String(
+                now.getDate()
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+
+        const link =
+            document
+            .createElement(
+                "a"
+            );
+
+
+        link.download =
+            `FCN每日精選報價_${y}${m}${d}.png`;
+
+
+        link.href =
+            imageURL;
+
+
+        document.body
+            .appendChild(
+                link
+            );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+    }
+
+    catch(error) {
+
+
+        console.error(
+            error
+        );
+
+
+        alert(
+            "圖片產生失敗，請再試一次。"
+        );
+
+
+    }
+
+    finally {
+
+
+        button.disabled =
+            false;
+
+
+        button.innerHTML =
+            oldText;
+
+    }
+
+}
+
+
+
+/* =====================================================
+   EXAMPLE
+===================================================== */
+
+function loadExample() {
+
+
+const example =
+`Best (20萬)	Solve	Type	Currency	Tenor (M)	Coupon	Coupon Period	Strike	KI	KI Freq	KO	KO Freq	KO Start	Memory KO	U1	U2	U3
+GS (12.51%)	Coupon	FCN	USD	6		1	70.00%	50.00%	AKI	100.00%	Daily	1	Yes	TSM	MU	NVDA
+BAR (8.06%)	Coupon	FCN	USD	6		1	60.00%	50.00%	EKI	100.00%	Daily	1	Yes	TSM	MU	NVDA
+JPM (12.10%)	Coupon	FCN	USD	6		1	70.00%	50.00%	AKI	100.00%	Daily	1	Yes	TSM	MU	GOOGL
+UBS (9.85%)	Coupon	FCN	USD	6		1	65.00%	50.00%	EKI	100.00%	Daily	1	Yes	TSM	MU	GOOGL
+GS (12.54%)	Coupon	FCN	USD	6		1	70.00%	50.00%	AKI	100.00%	Daily	1	Yes	TSM	MU	AVGO
+BAR (10.44%)	Coupon	FCN	USD	6		1	65.00%	50.00%	EKI	100.00%	Daily	1	Yes	TSM	MU	AVGO
+JPM (12.06%)	Coupon	FCN	USD	6		1	70.00%	50.00%	AKI	100.00%	Daily	1	Yes	TSM	MU	AAPL
+UBS (9.84%)	Coupon	FCN	USD	6		1	65.00%	50.00%	EKI	100.00%	Daily	1	Yes	TSM	MU	AAPL
+NO (9.99%)	Coupon	FCN	USD	6		1	65.00%	50.00%	AKI	100.00%	Daily	1	Yes	TSM	MU	SOXX
+CG (11.33%)	Coupon	FCN	USD	6		1	70.00%	50.00%	EKI	100.00%	Daily	1	Yes	QQQ	SPY	SOXX`;
+
+
+    document
+        .getElementById(
+            "pasteArea"
+        )
+        .value =
+        example;
+
+
+    generateQuote();
+
+}
+
+
+
+/* =====================================================
+   CLEAR
+===================================================== */
+
+function clearAll() {
+
+
+    document
+        .getElementById(
+            "pasteArea"
+        )
+        .value =
+        "";
+
+
+    document
+        .getElementById(
+            "summary"
+        )
+        .innerHTML =
+        "";
+
+
+    document
+        .getElementById(
+            "quoteList"
+        )
+        .innerHTML = `
+
+            <div class="empty">
+
+                貼上 FCN 報價資料後<br>
+
+                按「生成每日報價」
+
+            </div>
+
+        `;
+
+}
+
+</script>
+
+
+</body>
+
+</html>
