@@ -782,6 +782,142 @@ button:disabled {
 
 
 /* =====================================================
+   生成圖片：全螢幕檢視（手機長按存相簿）
+===================================================== */
+
+.img-modal {
+
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 99999;
+
+    background: rgba(6,20,40,.94);
+}
+
+
+.img-modal.on {
+
+    display: block;
+}
+
+
+.img-bar {
+
+    position: sticky;
+
+    top: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    padding: 14px 16px;
+
+    background: #0d2748;
+}
+
+
+.img-bar .imt {
+
+    color: #ffffff;
+
+    font-size: 15px;
+
+    font-weight: 800;
+
+    line-height: 1.5;
+}
+
+
+.img-bar .imt small {
+
+    display: block;
+
+    color: #a9c3db;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+
+.img-bar .imx {
+
+    flex: 0 0 auto;
+
+    background: #ffffff;
+
+    color: #0d2748;
+
+    border-radius: 10px;
+
+    padding: 8px 14px;
+
+    font-size: 15px;
+
+    font-weight: 900;
+}
+
+
+.img-scroll {
+
+    height: calc(100% - 62px);
+
+    overflow: auto;
+
+    -webkit-overflow-scrolling: touch;
+
+    padding: 14px;
+
+    text-align: center;
+}
+
+
+.img-scroll img {
+
+    width: 100%;
+
+    max-width: 1100px;
+
+    height: auto;
+
+    border-radius: 10px;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+
+
+.img-foot {
+
+    margin: 16px auto 30px;
+
+    max-width: 300px;
+
+    background: #ffffff;
+
+    color: #0d2748;
+
+    border-radius: 12px;
+
+    padding: 13px;
+
+    font-size: 16px;
+
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+/* =====================================================
    A4 直式・單頁列印
 ===================================================== */
 
@@ -796,7 +932,8 @@ button:disabled {
 @media print {
 
 
-    .control-panel {
+    .control-panel,
+    .img-modal {
 
         display: none !important;
     }
@@ -1278,6 +1415,16 @@ button:disabled {
 
         <button
             class="btn-gold"
+            id="makeImageBtn"
+            onclick="makeImage()">
+
+            🖼️ 生成圖片
+
+        </button>
+
+
+        <button
+            class="btn-gold"
             id="saveImageBtn"
             onclick="saveAsImage()">
 
@@ -1300,6 +1447,37 @@ button:disabled {
 
 </div>
 
+
+
+<!-- =====================================================
+     生成圖片檢視（手機長按存相簿）
+===================================================== -->
+
+<div class="img-modal" id="imgModal">
+
+    <div class="img-bar">
+
+        <div class="imt">
+
+            長按圖片即可儲存到相簿
+
+            <small>Android 為長按 → 下載圖片</small>
+
+        </div>
+
+        <button class="imx" onclick="closeImage()">✕ 關閉</button>
+
+    </div>
+
+    <div class="img-scroll">
+
+        <img id="imgOut" alt="FCN 每日精選報價">
+
+        <div class="img-foot" onclick="closeImage()">關閉</div>
+
+    </div>
+
+</div>
 
 
 <!-- =====================================================
@@ -2647,6 +2825,222 @@ window.addEventListener(
 /* =====================================================
    IMAGE
 ===================================================== */
+
+// 把報價區畫成 canvas（產圖前會先取消預覽縮放，輸出原始尺寸）
+
+async function captureQuoteCanvas() {
+
+
+    const quoteArea =
+        document
+        .getElementById(
+            "quoteArea"
+        );
+
+
+    const saved = {
+
+        t: quoteArea.style.transform,
+
+        mr: quoteArea.style.marginRight,
+
+        mb: quoteArea.style.marginBottom
+
+    };
+
+
+    try {
+
+
+        quoteArea.style.transform = "none";
+
+        quoteArea.style.marginRight = "0px";
+
+        quoteArea.style.marginBottom = "0px";
+
+
+        await new Promise(
+            r => setTimeout(r, 150)
+        );
+
+
+        return await html2canvas(
+
+            quoteArea,
+
+            {
+
+                scale: 2,
+
+                useCORS: true,
+
+                backgroundColor: "#061d45",
+
+                logging: false,
+
+                width: quoteArea.scrollWidth,
+
+                height: quoteArea.scrollHeight,
+
+                windowWidth: quoteArea.scrollWidth,
+
+                windowHeight: quoteArea.scrollHeight
+
+            }
+
+        );
+
+
+    }
+
+    finally {
+
+
+        quoteArea.style.transform = saved.t;
+
+        quoteArea.style.marginRight = saved.mr;
+
+        quoteArea.style.marginBottom = saved.mb;
+
+
+        fitPreview();
+
+    }
+
+}
+
+
+
+// 生成圖片 → 在畫面上顯示，手機長按即可存到相簿
+
+async function makeImage() {
+
+
+    const rows =
+        document
+        .querySelectorAll(
+            ".quote-row"
+        );
+
+
+    if (!rows.length) {
+
+
+        alert(
+            "請先生成 FCN 每日報價"
+        );
+
+
+        return;
+
+    }
+
+
+    const button =
+        document
+        .getElementById(
+            "makeImageBtn"
+        );
+
+
+    const oldText =
+        button.innerHTML;
+
+
+    button.disabled = true;
+
+
+    button.innerHTML = "圖片產生中...";
+
+
+    try {
+
+
+        const canvas =
+            await captureQuoteCanvas();
+
+
+        document
+            .getElementById(
+                "imgOut"
+            )
+            .src =
+            canvas.toDataURL(
+                "image/png",
+                1
+            );
+
+
+        document
+            .getElementById(
+                "imgModal"
+            )
+            .classList
+            .add("on");
+
+
+        document.body.style.overflow = "hidden";
+
+
+    }
+
+    catch (error) {
+
+
+        console.error(error);
+
+
+        alert(
+            "圖片產生失敗，請再試一次。"
+        );
+
+
+    }
+
+    finally {
+
+
+        button.disabled = false;
+
+
+        button.innerHTML = oldText;
+
+    }
+
+}
+
+
+
+function closeImage() {
+
+
+    document
+        .getElementById(
+            "imgModal"
+        )
+        .classList
+        .remove("on");
+
+
+    document.body.style.overflow = "";
+
+}
+
+
+document.addEventListener(
+    "keydown",
+    e => {
+
+        if (e.key === "Escape") {
+
+            closeImage();
+
+        }
+
+    }
+);
+
+
 
 async function saveAsImage() {
 
