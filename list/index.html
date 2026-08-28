@@ -398,6 +398,64 @@ button:disabled {
 
 
 /* =====================================================
+   表頭列（欄位標題）
+===================================================== */
+
+.quote-head {
+
+    display: none;
+
+    grid-template-columns:
+        150px
+        75px
+        80px
+        145px
+        125px
+        152px
+        128px
+        minmax(240px, 1fr);
+
+    column-gap: 18px;
+
+    align-items: center;
+
+    padding:
+        14px 21px 14px 28px;
+
+    margin-bottom: 12px;
+
+    background:
+        rgba(255,255,255,.10);
+
+    border:
+        1px solid
+        rgba(255,255,255,.20);
+
+    border-radius: 14px;
+}
+
+
+.quote-head.on {
+
+    display: grid;
+}
+
+
+.quote-head div {
+
+    color: #f3cd62;
+
+    font-size: 22px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+
+    white-space: nowrap;
+}
+
+
+/* =====================================================
    報價列
 ===================================================== */
 
@@ -419,9 +477,9 @@ button:disabled {
         80px
         145px
         125px
-        115px
-        115px
-        minmax(270px, 1fr);
+        152px
+        128px
+        minmax(240px, 1fr);
 
     column-gap: 18px;
 
@@ -953,6 +1011,42 @@ button:disabled {
     }
 
 
+    .quote-head {
+
+        grid-template-columns:
+            22mm
+            11mm
+            12mm
+            22mm
+            18mm
+            20mm
+            18mm
+            1fr !important;
+
+        column-gap:
+            1mm !important;
+
+        padding:
+            1.2mm 2mm 1.2mm 3mm !important;
+
+        margin-bottom:
+            1.3mm !important;
+
+        border-radius:
+            2mm !important;
+    }
+
+
+    .quote-head div {
+
+        font-size:
+            7.5pt !important;
+
+        letter-spacing:
+            0 !important;
+    }
+
+
     .quote-list {
 
         gap:
@@ -968,8 +1062,8 @@ button:disabled {
             12mm
             22mm
             18mm
-            17mm
-            17mm
+            20mm
+            18mm
             1fr !important;
 
         column-gap:
@@ -1313,6 +1407,23 @@ button:disabled {
     <div
         class="summary"
         id="summary">
+
+    </div>
+
+
+
+    <div
+        class="quote-head"
+        id="quoteHead">
+
+        <div>發行機構</div>
+        <div>幣別</div>
+        <div>天期</div>
+        <div>年化 Coupon</div>
+        <div>Strike</div>
+        <div>KI</div>
+        <div>KO</div>
+        <div>連結標的</div>
 
     </div>
 
@@ -2199,13 +2310,6 @@ function generateQuote() {
                 <div class="cell">
 
 
-                    <div class="label">
-
-                        發行機構
-
-                    </div>
-
-
                     <div
                         class="
                             value
@@ -2226,13 +2330,6 @@ function generateQuote() {
                 <div class="cell">
 
 
-                    <div class="label">
-
-                        幣別
-
-                    </div>
-
-
                     <div
                         class="
                             value
@@ -2251,13 +2348,6 @@ function generateQuote() {
 
 
                 <div class="cell">
-
-
-                    <div class="label">
-
-                        天期
-
-                    </div>
 
 
                     <div
@@ -2286,13 +2376,6 @@ function generateQuote() {
                 <div class="cell">
 
 
-                    <div class="label">
-
-                        年化 Coupon
-
-                    </div>
-
-
                     <div
                         class="
                             value
@@ -2317,13 +2400,6 @@ function generateQuote() {
 
 
                 <div class="cell">
-
-
-                    <div class="label">
-
-                        Strike
-
-                    </div>
 
 
                     <div
@@ -2352,13 +2428,6 @@ function generateQuote() {
                 <!-- KI + AKI / EKI -->
 
                 <div class="cell">
-
-
-                    <div class="label">
-
-                        KI
-
-                    </div>
 
 
                     <div class="ki-line">
@@ -2410,13 +2479,6 @@ function generateQuote() {
                 <div class="cell">
 
 
-                    <div class="label">
-
-                        KO
-
-                    </div>
-
-
                     <div
                         class="
                             value
@@ -2447,13 +2509,6 @@ function generateQuote() {
                     ">
 
 
-                    <div class="label">
-
-                        連結標的
-
-                    </div>
-
-
                     <div class="stocks">
 
                         ${buildStocks(
@@ -2474,6 +2529,14 @@ function generateQuote() {
 
         }
     );
+
+
+    document
+        .getElementById(
+            "quoteHead"
+        )
+        .classList
+        .add("on");
 
 
     buildSummary(
@@ -2914,6 +2977,14 @@ CG (11.33%)	Coupon	FCN	USD	6		1	70.00%	50.00%	EKI	100.00%	Daily	1	Yes	QQQ	SPY	SO
 ===================================================== */
 
 function clearAll() {
+
+
+    document
+        .getElementById(
+            "quoteHead"
+        )
+        .classList
+        .remove("on");
 
 
     document
