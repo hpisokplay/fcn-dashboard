@@ -44,6 +44,23 @@ def yahoo_symbol(sym):
     return s if s.endswith(".T") else s.replace(".", "-")
 
 
+def symbols_from_extra():
+    """從 extra_symbols.txt 讀出使用者在詢價系統臨時加入的標的（一行一個代號）"""
+    found = set()
+    path = os.path.join(ROOT, "extra_symbols.txt")
+    if not os.path.exists(path):
+        return found
+    try:
+        with open(path, encoding="utf-8-sig") as f:
+            for line in f:
+                c = line.strip().upper()
+                if c and not c.startswith("#"):
+                    found.add(c)
+    except Exception as e:  # noqa
+        print(f"讀 extra_symbols.txt 失敗：{e}")
+    return found
+
+
 def symbols_from_csv():
     """從 data.csv 讀出實際持有標的（s1_code~s4_code），確保新加的股也會被抓到"""
     found = set()
@@ -116,7 +133,7 @@ def fetch_chart(sym, retries=3):
 
 
 def main():
-    symbols = sorted(set(BASE_SYMBOLS) | symbols_from_csv())
+    symbols = sorted(set(BASE_SYMBOLS) | symbols_from_csv() | symbols_from_extra())
     print(f"共 {len(symbols)} 檔標的")
     out = {}
     ok = 0

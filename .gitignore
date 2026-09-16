@@ -2,3 +2,6 @@
 新增 文字文件.txt
 *.txt
 _app.js
+
+# 例外：詢價系統用來加入標的的清單（純代號，無機敏資料）
+!extra_symbols.txt
