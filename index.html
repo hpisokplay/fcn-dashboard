@@ -95,7 +95,7 @@
                 <button @click="view = 'alerts'" :class="['nav-btn', view === 'alerts' ? 'active' : '']">預警中心</button>
                 <button @click="view = 'entry'" :class="['nav-btn', view === 'entry' ? 'active' : '']">資料輸入</button>
                 <button @click="runPriceSchedule" :disabled="isUploading" class="nav-btn text-orange-600"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>報價排程</button>
-                <span v-if="autoUpdatedAt" class="flex items-center text-xs font-bold text-gray-400 whitespace-nowrap"><i class="fa-solid fa-clock-rotate-left mr-1 text-green-500"></i>自動更新 {{ autoUpdatedAt }}</span>
+                <span v-if="autoUpdatedAt" :class="['flex items-center text-xs font-bold whitespace-nowrap', priceStale ? 'text-red-600' : 'text-gray-400']"><i :class="['fa-solid mr-1', priceStale ? 'fa-triangle-exclamation text-red-500' : 'fa-clock-rotate-left text-green-500']"></i>{{ priceStale ? '價格逾 20 小時未更新' : '自動更新' }} {{ autoUpdatedAt }}</span>
                 <div class="ml-auto flex items-center pr-3">
                     <i @click="fetchRealPrices" class="fa-solid fa-rotate text-blue-500 cursor-pointer text-lg" :class="{'animate-spin': isSyncing}"></i>
                 </div>
@@ -865,7 +865,7 @@
                     inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達', selectedClient: '', previewSales: '',
                     isStandalone: false, showA2HS: false,
                     repMode: false, repToken: '',
-                    lastUpdated: '', autoUpdatedAt: '',
+                    lastUpdated: '', autoUpdatedAt: '', priceStale: false,
                     fx: { usdTwd: 0, jpyTwd: 0, ok: false, at: '' }
                 }
             },
@@ -1642,7 +1642,11 @@
                                 }
                             });
                         });
-                        if (payload.updated) this.autoUpdatedAt = new Date(payload.updated * 1000).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+                        if (payload.updated) {
+                            this.autoUpdatedAt = new Date(payload.updated * 1000).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+                            // 正常情況下每天會自動更新多次；超過 20 小時沒更新代表排程異常
+                            this.priceStale = (Date.now() / 1000 - payload.updated) > 20 * 3600;
+                        }
                         this.lastUpdated = new Date().toLocaleTimeString() + '（每日自動）';
                     } catch (e) {
                         // 後備：prices.json 尚未產生時，沿用原本的即時抓法
