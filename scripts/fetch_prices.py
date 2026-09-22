@@ -106,6 +106,26 @@ def fetch_chart(sym, retries=3):
             if market_open and closes:
                 ts, highs, lows, closes = ts[:-1], highs[:-1], lows[:-1], closes[:-1]
 
+            # 清掉尾端「尚未結算」的空日K：
+            # Yahoo 的日K 常在收盤後數小時才把當日收盤價填進去（實測美股約 5 小時），
+            # 在那之前最後一根的 close 是 null，會讓現價退回前一天。
+            while closes and closes[-1] is None:
+                ts, highs, lows, closes = ts[:-1], highs[:-1], lows[:-1], closes[:-1]
+
+            # 市場已收盤但日K 還沒結算時，用 regularMarketPrice（正規盤收盤價，
+            # 收盤瞬間就會更新，不含盤後交易）補上當日這一根，避免整天落後一日。
+            rmp = meta.get("regularMarketPrice")
+            rmt = meta.get("regularMarketTime")
+            if (not market_open) and rmp is not None and rmt:
+                day = lambda t: time.strftime("%Y-%m-%d", time.gmtime(t))
+                if (not ts) or day(rmt) > day(ts[-1]):
+                    ts.append(rmt)
+                    closes.append(rmp)
+                    # 當日高低尚未提供，以收盤價代入（KI/KO 判定使用收盤價）
+                    highs.append(rmp)
+                    lows.append(rmp)
+                    print(f"    （{sym} 日K未結算，改用收盤報價 {rmp} 補上 {day(rmt)}）")
+
             # 現價 = 最後一根「已收盤」的日收盤價
             cur = None
             for c in reversed(closes):
