@@ -95,7 +95,8 @@
                 <button @click="view = 'alerts'" :class="['nav-btn', view === 'alerts' ? 'active' : '']">預警中心</button>
                 <button @click="view = 'entry'" :class="['nav-btn', view === 'entry' ? 'active' : '']">資料輸入</button>
                 <button @click="runPriceSchedule" :disabled="isUploading" class="nav-btn text-orange-600"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>報價排程</button>
-                <span v-if="autoUpdatedAt" :class="['flex items-center text-xs font-bold whitespace-nowrap', priceStale ? 'text-red-600' : 'text-gray-400']"><i :class="['fa-solid mr-1', priceStale ? 'fa-triangle-exclamation text-red-500' : 'fa-clock-rotate-left text-green-500']"></i>{{ priceStale ? '價格逾 20 小時未更新' : '自動更新' }} {{ autoUpdatedAt }}</span>
+                <span v-if="autoRefreshing" class="flex items-center text-xs font-bold text-blue-600 whitespace-nowrap"><i class="fa-solid fa-rotate fa-spin mr-1"></i>價格補抓中…</span>
+                <span v-else-if="autoUpdatedAt" :class="['flex items-center text-xs font-bold whitespace-nowrap', priceStale ? 'text-red-600' : 'text-gray-400']"><i :class="['fa-solid mr-1', priceStale ? 'fa-triangle-exclamation text-red-500' : 'fa-clock-rotate-left text-green-500']"></i>{{ priceStale ? '價格逾 20 小時未更新' : '自動更新' }} {{ autoUpdatedAt }}</span>
                 <div class="ml-auto flex items-center pr-3">
                     <i @click="fetchRealPrices" class="fa-solid fa-rotate text-blue-500 cursor-pointer text-lg" :class="{'animate-spin': isSyncing}"></i>
                 </div>
@@ -865,7 +866,7 @@
                     inventory: [], isSyncing: false, search: '', alertTab: 'ki', selectedSales: '吳坤達', selectedClient: '', previewSales: '',
                     isStandalone: false, showA2HS: false,
                     repMode: false, repToken: '',
-                    lastUpdated: '', autoUpdatedAt: '', priceStale: false,
+                    lastUpdated: '', autoUpdatedAt: '', priceStale: false, autoRefreshing: false,
                     fx: { usdTwd: 0, jpyTwd: 0, ok: false, at: '' }
                 }
             },
@@ -1624,6 +1625,61 @@
                     // 備援：抓不到就用近似匯率（僅供估算，畫面會標示）
                     if (!this.fx.ok) this.fx = { usdTwd: 30, jpyTwd: 0.20, ok: false, at: '' };
                 },
+                // 最近一個「已收盤」的美股交易日（UTC 日期字串；美股 20:00 UTC 收盤）
+                lastUsSessionDate() {
+                    const now = new Date();
+                    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+                    if (now.getUTCHours() < 20) d.setUTCDate(d.getUTCDate() - 1);
+                    while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1);
+                    return d.toISOString().slice(0, 10);
+                },
+                // 價格庫落後時自動觸發一次抓價排程（需要已存的 GitHub Token；30 分鐘內只試一次）
+                async maybeAutoRefresh(prices) {
+                    try {
+                        if (this.repMode || !this.githubToken || this.autoRefreshing) return;
+                        const usDates = Object.keys(prices)
+                            .filter(k => !k.endsWith('.T'))
+                            .map(k => (prices[k].timestamp || []).slice(-1)[0])
+                            .filter(Boolean)
+                            .map(t => new Date(t * 1000).toISOString().slice(0, 10));
+                        if (!usDates.length) return;
+                        const newest = usDates.sort().slice(-1)[0];
+                        if (newest >= this.lastUsSessionDate()) return;   // 已是最新，不用補
+                        const last = +(localStorage.getItem('fcn_auto_fetch') || 0);
+                        if (Date.now() - last < 30 * 60 * 1000) return;   // 30 分鐘內不重複觸發
+                        localStorage.setItem('fcn_auto_fetch', String(Date.now()));
+
+                        this.autoRefreshing = true;
+                        const owner = 'hpisokplay', repo = 'fcn-dashboard';
+                        const d = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/prices.yml/dispatches`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `token ${this.githubToken}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ref: 'main' })
+                        });
+                        if (d.status !== 204) { this.autoRefreshing = false; return; }
+                        // 等排程寫入新價格（最多約 3 分鐘），完成後重新套用
+                        const before = this.autoUpdatedAt;
+                        for (let i = 0; i < 18; i++) {
+                            await new Promise(r => setTimeout(r, 10000));
+                            try {
+                                const r2 = await fetch('prices.json?v=' + Date.now());
+                                const j2 = await r2.json();
+                                const nd = Object.keys(j2.prices || {})
+                                    .filter(k => !k.endsWith('.T'))
+                                    .map(k => (j2.prices[k].timestamp || []).slice(-1)[0])
+                                    .filter(Boolean)
+                                    .map(t => new Date(t * 1000).toISOString().slice(0, 10))
+                                    .sort().slice(-1)[0];
+                                if (nd && nd >= this.lastUsSessionDate()) {
+                                    this.autoRefreshing = false;
+                                    await this.fetchRealPrices();
+                                    return;
+                                }
+                            } catch (e) { /* 繼續等 */ }
+                        }
+                    } catch (e) { console.warn('自動補抓失敗', e); }
+                    finally { this.autoRefreshing = false; }
+                },
                 async fetchRealPrices() {
                     if (this.inventory.length === 0) return;
                     this.isSyncing = true;
@@ -1648,6 +1704,8 @@
                             this.priceStale = (Date.now() / 1000 - payload.updated) > 20 * 3600;
                         }
                         this.lastUpdated = new Date().toLocaleTimeString() + '（每日自動）';
+                        // 價格落後最近一個美股交易日時，自動補抓一次（GitHub 排程常延遲 1~2 小時）
+                        this.maybeAutoRefresh(prices);
                     } catch (e) {
                         // 後備：prices.json 尚未產生時，沿用原本的即時抓法
                         console.warn('prices.json 讀取失敗，改用即時抓取', e);
