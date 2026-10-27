@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>上新莊分行 - FCN 管理系統 v58.FinalLogic</title>
+    <title>上新莊分行 - FCN 管理系統 v59.FinalLogic</title>
     <!-- PWA -->
     <meta name="theme-color" content="#0f2748">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -253,15 +253,15 @@
                         <label class="block font-bold text-gray-500">KI %<input type="number" step="0.01" v-model.number="form.kiP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                         <label class="col-span-2 flex items-center gap-3 font-bold text-gray-600 bg-red-50 rounded-xl px-4 py-3 cursor-pointer" style="border:1px solid #fecaca"><input type="checkbox" v-model="form.eki" class="w-5 h-5 accent-red-600"><span>此 KI 為 <b class="text-red-600">EKI（到期比價）</b>　<span class="text-gray-400 font-bold">不勾＝AKI（每日比價，最常見）</span></span></label>
                         <label class="block font-bold text-gray-500">Strike%<input type="number" step="0.01" v-model.number="form.strikeP" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
-                        <label class="block font-bold text-gray-500">觀察起日<input type="date" v-model="form.koStart" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
-                        <label class="block font-bold text-gray-500">下單日<input type="date" v-model="form.date" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
-                        <label class="block font-bold text-gray-500">到期日<input type="date" v-model="form.expiry" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block min-w-0 font-bold text-gray-500">觀察起日<input type="date" v-model="form.koStart" style="min-width:0;max-width:100%;-webkit-appearance:none;appearance:none" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block min-w-0 font-bold text-gray-500">下單日<input type="date" v-model="form.date" style="min-width:0;max-width:100%;-webkit-appearance:none;appearance:none" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
+                        <label class="block min-w-0 font-bold text-gray-500">到期日<input type="date" v-model="form.expiry" style="min-width:0;max-width:100%;-webkit-appearance:none;appearance:none" class="w-full mt-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800"></label>
                     </div>
-                    <h3 class="font-black mt-5 mb-2 text-gray-500 text-sm">標的（最多 5 檔・日股代號記得加 .T，例 7974.T）</h3>
+                    <h3 class="font-black mt-5 mb-2 text-gray-500 text-sm">標的（最多 5 檔・日股代號記得加 .T，例 7974.T）<br><span class="text-gray-400 font-bold">請輸入「期初價」（成交當天標的價）；KO／Strike／KI 價由系統依上面的 % 自動算</span></h3>
                     <div class="space-y-2">
                         <div v-for="(st,idx) in form.stocks" :key="idx" class="flex gap-2 items-center">
-                            <input v-model="st.code" placeholder="代號" class="flex-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-blue-600 uppercase">
-                            <input type="number" step="0.01" v-model.number="st.init" placeholder="KO價" class="flex-1 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800">
+                            <input v-model="st.code" placeholder="代號" class="flex-1 min-w-0 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-blue-600 uppercase">
+                            <input type="number" step="0.01" v-model.number="st.init" placeholder="期初價" class="flex-1 min-w-0 bg-gray-100 p-2.5 rounded-xl outline-none font-black text-slate-800">
                             <button @click="form.stocks.splice(idx,1)" class="text-red-500 font-black px-2">✕</button>
                         </div>
                         <button v-if="form.stocks.length<5" @click="form.stocks.push({code:'',init:null})" class="text-blue-600 font-black text-sm">＋ 加一檔標的</button>
@@ -1200,7 +1200,7 @@
                 submitEntry() {
                     const f = this.form;
                     if (!f.client) { alert('請輸入客戶'); return; }
-                    const stocks = (f.stocks || []).filter(s => s.code).map(s => ({ code: String(s.code).trim().toUpperCase(), init: s.init, current: s.init, history: null }));
+                    const kf = (f.koP > 0 ? f.koP : 100) / 100; /* 表單輸入的是期初價；內部欄位 init 仍存 KO 價 = 期初價 × KO% */ const stocks = (f.stocks || []).filter(s => s.code).map(s => ({ code: String(s.code).trim().toUpperCase(), init: (s.init > 0 ? Math.round(s.init * kf * 1e6) / 1e6 : s.init), current: s.init, history: null }));
                     const item = { ...this.editExtra, client:f.client, sn:f.sn, sales:f.sales, currency:f.currency, coupon:f.coupon, koP:f.koP, kiP:f.kiP, strikeP:f.strikeP, eki:!!f.eki, koStart:f.koStart, date:f.date, expiry:f.expiry, amount:f.amount, stocks };
                     if (this.editIndex === null) this.inventory.push(item);
                     else this.inventory.splice(this.editIndex, 1, item);
@@ -1210,7 +1210,7 @@
                 },
                 editEntry(idx) {
                     const it = this.inventory[idx];
-                    this.form = { client:it.client, sn:it.sn, sales:it.sales, currency:it.currency, coupon:it.coupon, koP:it.koP, kiP:it.kiP, strikeP:it.strikeP, eki:!!it.eki, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount, stocks:(it.stocks||[]).map(s => ({ code:s.code, init:s.init })) };
+                    this.form = { client:it.client, sn:it.sn, sales:it.sales, currency:it.currency, coupon:it.coupon, koP:it.koP, kiP:it.kiP, strikeP:it.strikeP, eki:!!it.eki, koStart:it.koStart, date:it.date, expiry:it.expiry, amount:it.amount, stocks:(it.stocks||[]).map(s => ({ code:s.code, init:(s.init > 0 ? Math.round(s.init / ((it.koP > 0 ? it.koP : 100) / 100) * 1e4) / 1e4 : s.init) })) }; /* 還原成期初價給表單顯示 */
                     if (!this.form.stocks.length) this.form.stocks = [{code:'',init:null}];
                     this.editExtra = { branch:it.branch, branchCode:it.branchCode, account:it.account, idno:it.idno, isin:it.isin, tradeType:it.tradeType };
                     this.editIndex = idx;
