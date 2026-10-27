@@ -421,8 +421,8 @@
                             <p class="font-black leading-none my-3 text-slate-900" style="font-size:40px">{{ formatPrice(s.current) }}<span v-if="s.current" class="font-bold text-gray-400" style="font-size:20px"> 元</span></p>
                             <div class="font-bold text-gray-500 border-t-2 border-gray-200 pt-2 mt-1 space-y-1" style="font-size:17px">
                                 <p>KO價：<span class="text-slate-900 font-black">{{ formatPrice(s.init) }} 元</span></p>
-                                <p>Strike價：<span class="text-slate-900 font-black">{{ item.strikeP > 0 ? formatPrice(s.init * (item.strikeP/100)) + ' 元' : '無' }}</span></p>
-                                <p>KI價<span v-if="item.eki" class="text-red-600 font-black">（EKI）</span>：<span class="text-slate-900 font-black">{{ item.kiP > 0 ? formatPrice(s.init * (item.kiP/100)) + ' 元' : '無' }}</span></p>
+                                <p>Strike價：<span class="text-slate-900 font-black">{{ item.strikeP > 0 ? formatPrice(lv(item, s, item.strikeP)) + ' 元' : '無' }}</span></p>
+                                <p>KI價<span v-if="item.eki" class="text-red-600 font-black">（EKI）</span>：<span class="text-slate-900 font-black">{{ item.kiP > 0 ? formatPrice(lv(item, s, item.kiP)) + ' 元' : '無' }}</span></p>
                             </div>
                             <p class="text-3xl font-black mt-2" :class="perfColor(item, s)">{{ getPerf(item, s) }}%</p>
                             <div v-if="koHitLabel(item, s)" class="font-black text-blue-800 bg-blue-100 rounded-lg px-2 py-1.5 mt-2 leading-snug" style="font-size:15px">
@@ -510,7 +510,7 @@
                 koHitLabel(i, s){ if (!this.isStockKO(i, s)) return ''; const k = this.koHitInfo(i, s); return k ? `${k.date}・收 ${this.formatPrice(k.close)}` : ''; },
                 kiHitInfo(i, s){
                     if (!(i.kiP > 0)) return null;
-                    const ki = s.init * i.kiP / 100;  // KI價
+                    const ki = this.lv(i, s, i.kiP);  // KI價
                     if (s.history && s.history.timestamp) {
                         const start = this.parseDate(i.date).getTime() / 1000;
                         const arr = s.history.close || s.history.low;
@@ -524,9 +524,11 @@
                     return null;
                 },
                 kiHitLabel(i, s){ if (!this.isStockKI(i, s)) return ''; const k = this.kiHitInfo(i, s); return k ? `${k.date}・收 ${this.formatPrice(k.close)}` : ''; },
+                // 價位換算：標的欄位存的是 KO 價，真正期初價 = KO價 ÷ KO%；Strike／KI 價 = 期初價 × 該%
+                lv(i, s, pct) { return s.init * pct / (i.koP > 0 ? i.koP : 100); },
                 getPerf(i,s){
                     if (!s.init || !s.current || s.current <= 0) return '100.00';
-                    return ((s.current/s.init)*100).toFixed(2);
+                    return (s.current/s.init*(i.koP > 0 ? i.koP : 100)).toFixed(2);
                 },
                 perfColor(i,s){
                     if (!s.current || s.current <= 0) return 'text-gray-300';
@@ -540,7 +542,7 @@
                     const dateLimit = this.parseDate(i.date);
                     return i.stocks.some(s => {
                         const lowest = this.getLowestSince(s, dateLimit);
-                        return lowest > 0 && lowest <= (s.init * i.kiP / 100);
+                        return lowest > 0 && lowest <= (this.lv(i, s, i.kiP));
                     });
                 },
                 // 到期接股：整檔沒有 KO 出場，但曾觸及 KI → 到期用 Strike 接最差的標的
@@ -559,7 +561,7 @@
                     if (!st.length) return null;
                     let worst = st[0];
                     st.forEach(s => { if ((s.current / s.init) < (worst.current / worst.init)) worst = s; });
-                    return { code: worst.code.replace('.T', ''), perf: ((worst.current / worst.init) * 100).toFixed(2), strike: worst.init * (i.strikeP / 100) };
+                    return { code: worst.code.replace('.T', ''), perf: (worst.current / worst.init * (i.koP > 0 ? i.koP : 100)).toFixed(2), strike: this.lv(i, worst, i.strikeP) };
                 },
                 deliveryLabel(i) {
                     const d = this.deliveryInfo(i);
@@ -588,8 +590,8 @@
                         return '<div style="display:flex;align-items:center;justify-content:center;height:' + H + 'px;color:#94a3b8;font-weight:700;font-size:14px">走勢資料尚未抓取 — 請先執行「報價排程」</div>';
                     }
                     const ko = s.init;
-                    const strike = i.strikeP > 0 ? s.init * i.strikeP / 100 : null;
-                    const ki = i.kiP > 0 ? s.init * i.kiP / 100 : null;
+                    const strike = i.strikeP > 0 ? this.lv(i, s, i.strikeP) : null;
+                    const ki = i.kiP > 0 ? this.lv(i, s, i.kiP) : null;
                     const barriers = [ko, strike, ki].filter(v => v != null);
                     let vMin = Math.min(...pts.map(p => p.c), ...barriers);
                     let vMax = Math.max(...pts.map(p => p.c), ...barriers);
@@ -665,9 +667,9 @@
                     const monthly = cur + this.formatNum(this.calcMonthly(i));
                     // ===== 第 1 頁：部位明細欄 =====
                     const detailCols = st.map((s, idx) => {
-                        const strike = i.strikeP > 0 ? this.formatPrice(s.init * i.strikeP / 100) + ' 元' : '無';
-                        const ki = i.kiP > 0 ? this.formatPrice(s.init * i.kiP / 100) + ' 元' : '無';
-                        const perf = (s.init && s.current) ? (s.current / s.init * 100).toFixed(2) + '%' : '-';
+                        const strike = i.strikeP > 0 ? this.formatPrice(this.lv(i, s, i.strikeP)) + ' 元' : '無';
+                        const ki = i.kiP > 0 ? this.formatPrice(this.lv(i, s, i.kiP)) + ' 元' : '無';
+                        const perf = (s.init && s.current) ? (s.current / s.init * (i.koP > 0 ? i.koP : 100)).toFixed(2) + '%' : '-';
                         let badges = '';
                         if (this.isStockKO(i, s)) badges += '<span class="bdg ko">曾達KO</span>';
                         if (this.isStockKI(i, s)) badges += '<span class="bdg ki">曾觸KI</span>';
@@ -787,7 +789,7 @@
                     if (i.kiP <= 0) return false;
                     const dateLimit = this.parseDate(i.date);
                     const lowest = this.getLowestSince(s, dateLimit);
-                    return lowest > 0 && lowest <= (s.init * i.kiP / 100);
+                    return lowest > 0 && lowest <= (this.lv(i, s, i.kiP));
                 },
                 // 邏輯: 曾經漲破 KO (歷史最高 >= KO價，觀察日後)
                 isStockKO(i, s) {
@@ -881,7 +883,7 @@
                         const dateLimit = this.parseDate(i.date);
                         return i.stocks.some(s => {
                             const lowest = this.getLowestSince(s, dateLimit);
-                            return lowest > 0 && lowest <= (s.init * i.kiP / 100);
+                            return lowest > 0 && lowest <= (this.lv(i, s, i.kiP));
                         });
                     });
                 },
@@ -1055,7 +1057,7 @@
                 _stkStatus(i, s) {
                     const tags = [];
                     if (!this.checkIsLocked(i) && this.getHighestSince(s, this.parseDate(i.koStart)) >= s.init) tags.push('<b style="color:#dc2626">曾達KO</b>');
-                    if (i.kiP > 0 && this.getLowestSince(s, this.parseDate(i.date)) <= s.init * i.kiP / 100) tags.push('<b style="color:#dc2626">曾觸KI</b>');
+                    if (i.kiP > 0 && this.getLowestSince(s, this.parseDate(i.date)) <= this.lv(i, s, i.kiP)) tags.push('<b style="color:#dc2626">曾觸KI</b>');
                     return tags.length ? tags.join('・') : '<span style="color:#16a34a">正常</span>';
                 },
                 exportSelectedClient() {
@@ -1112,9 +1114,9 @@
                             return;
                         }
                         st.forEach((s, k) => {
-                            const strike = i.strikeP > 0 ? this.formatPrice(s.init * i.strikeP / 100) : '無';
-                            const ki = i.kiP > 0 ? this.formatPrice(s.init * i.kiP / 100) : '無';
-                            const perf = (s.init && s.current) ? (s.current / s.init * 100).toFixed(2) + '%' : '-';
+                            const strike = i.strikeP > 0 ? this.formatPrice(this.lv(i, s, i.strikeP)) : '無';
+                            const ki = i.kiP > 0 ? this.formatPrice(this.lv(i, s, i.kiP)) : '無';
+                            const perf = (s.init && s.current) ? (s.current / s.init * (i.koP > 0 ? i.koP : 100)).toFixed(2) + '%' : '-';
                             const cells =
                                 '<td class="l"><b style="color:#1d4ed8">' + s.code.replace('.T', '') + '</b> <span style="color:#94a3b8;font-size:11px">' + this.getStockName(s.code) + '</span></td>' +
                                 '<td class="c" style="font-weight:900">' + this.formatPrice(s.current) + '</td>' +
@@ -1463,7 +1465,7 @@
                     try {
                         if (i.kiP > 0) {
                             const dl = this.parseDate(i.date);
-                            if ((i.stocks || []).some(s => { const lo = this.getLowestSince(s, dl); return lo > 0 && lo <= (s.init * i.kiP / 100); })) parts.push('觸及KI');
+                            if ((i.stocks || []).some(s => { const lo = this.getLowestSince(s, dl); return lo > 0 && lo <= (this.lv(i, s, i.kiP)); })) parts.push('觸及KI');
                         }
                         if (!this.checkIsLocked(i)) {
                             const st = this.parseDate(i.koStart);
@@ -1475,7 +1477,7 @@
                 exportExcel() {
                     if (typeof XLSX === 'undefined') { alert('Excel 元件尚未載入完成，請稍候再試一次'); return; }
                     if (!this.inventory.length) { alert('目前沒有資料可匯出'); return; }
-                    const perf = s => (s.init && s.current) ? Math.round((s.current / s.init) * 10000) / 100 : '';
+                    const perf = (s, it) => (s.init && s.current) ? Math.round((s.current / s.init) * (it.koP > 0 ? it.koP : 100) * 100) / 100 : '';
                     const rows = this.inventory.map(it => {
                         const st = it.stocks || [];
                         const row = {
@@ -1490,7 +1492,7 @@
                             row['標的' + (i+1)] = s ? s.code : '';
                             row['期初' + (i+1)] = s ? s.init : '';
                             row['現價' + (i+1)] = s ? s.current : '';
-                            row['表現' + (i+1) + '(%)'] = s ? perf(s) : '';
+                            row['表現' + (i+1) + '(%)'] = s ? perf(s, it) : '';
                         }
                         row['風險狀態'] = this.riskStatus(it);
                         return row;
