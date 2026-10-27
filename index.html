@@ -77,15 +77,6 @@
 </head>
 <body class="p-4 md:p-10">
     <div id="app" v-cloak class="max-w-4xl mx-auto">
-        <div v-if="!isLoggedIn" class="fixed inset-0 bg-slate-900 z-[2000] flex items-center justify-center p-6">
-            <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-sm text-center shadow-2xl">
-                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-6"><i class="fa-solid fa-lock text-2xl"></i></div>
-                <h2 class="text-2xl font-black mb-2 italic">上新莊管理系統</h2>
-                <p class="text-sm font-bold text-gray-400 mb-5 leading-relaxed">此為管理者總覽。<br><span class="text-blue-600">業務夥伴請改用主管給您的「專屬連結」開啟</span>，即可看到自己的客戶。</p>
-                <input v-model="inputPass" type="password" @keyup.enter="login" placeholder="Password" class="w-full bg-slate-100 border-none p-4 rounded-2xl text-center text-3xl tracking-[0.4em] mb-6 outline-none focus:ring-2 ring-blue-500 font-mono">
-                <button @click="login" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-lg">LOGIN</button>
-            </div>
-        </div>
 
         <template v-if="isLoggedIn">
             <div v-if="!repMode" class="nav-header sticky top-4 z-[1000] scrollbar-hide text-slate-800">
@@ -855,7 +846,7 @@
             components: { 'client-card': ClientCard },
             data() {
                 return {
-                    view: 'branch', isLoggedIn: true, inputPass: '', password: '98388',
+                    view: 'branch', isLoggedIn: true,
                     adminPassInput: '', adminPass: '983983',
                     form: { client:'', sn:'', sales:'', currency:'USD', coupon:null, koP:null, kiP:null, strikeP:null, eki:false, koStart:'', date:'', expiry:'', amount:null, stocks:[{code:'',init:null}] },
                     editIndex: null,
@@ -1186,7 +1177,6 @@
                         );
                     } else { prompt('複製此連結給 ' + name + '：', url); }
                 },
-                login() { if (this.inputPass === this.password) { this.isLoggedIn = true; sessionStorage.setItem('fcn_auth', 'true'); try { localStorage.setItem('fcn_mgr_ok', '1'); } catch (e) {} } },
                 installRepManifest(rep) {
                     // 業務頁「移除 manifest」。原因：iOS(Safari)對動態/blob manifest 支援不佳，加入主畫面時
                     // 會改用靜態 manifest 的 start_url（./）而把 ?rep 丟掉 → 桌面 App 打開變成無身分（看到鎖定/總表）。
@@ -1734,7 +1724,6 @@
                 }
             },
             mounted() {
-                if (sessionStorage.getItem('fcn_auth') === 'true') this.isLoggedIn = true;
                 // 是否已經是「加到主畫面」的全螢幕 App
                 this.isStandalone = (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
                 let rep = new URLSearchParams(location.search).get('rep');
@@ -1757,14 +1746,6 @@
                     this.installRepManifest(rep);
                     // 還在瀏覽器裡（尚未加到桌面）且未關閉過提示 → 顯示「加入主畫面」引導
                     if (!this.isStandalone && localStorage.getItem('fcn_a2hs_hide') !== '1') this.showA2HS = true;
-                } else if (this.isStandalone) {
-                    // 全螢幕 App 但偵測不到業務身分（例如舊的已安裝捷徑）→ 絕不直接顯示總表，
-                    // 需管理者密碼解鎖；業務打不開別人的資料。管理者解鎖後記在本機、不再詢問。
-                    if (localStorage.getItem('fcn_mgr_ok') === '1' || sessionStorage.getItem('fcn_auth') === 'true') {
-                        this.isLoggedIn = true;
-                    } else {
-                        this.isLoggedIn = false;
-                    }
                 }
                 this.loadCSVData();
                 this.fetchFX();
