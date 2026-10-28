@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>上新莊分行 - FCN 管理系統 v59.FinalLogic</title>
+    <title>上新莊分行 - FCN 管理系統 v60.FinalLogic</title>
     <!-- PWA -->
     <meta name="theme-color" content="#0f2748">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1018,6 +1018,8 @@
                 view() { this.previewSales = ''; }
             },
             methods: {
+                // 價位換算（主程式用；客戶卡片元件另有一份同名函式）：標的欄位存 KO 價，期初價 = KO價 ÷ KO%
+                lv(i, s, pct) { return s.init * pct / (i.koP > 0 ? i.koP : 100); },
                 parseDate(str) {
                     if(!str) return new Date();
                     return new Date(String(str).replace(/-/g, '/').trim());
